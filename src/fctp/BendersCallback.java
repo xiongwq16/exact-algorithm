@@ -87,7 +87,7 @@ class BendersCallback implements IloCplex.Callback.Function {
             FctpSubProblem subProblem = subProblems[threadNo];
             IloCplex.Status status = subProblem.solve(openValues, demand, capacity);
             
-            // 对偶问题无界，原问题无解
+            // 对偶问题无界
             if (status == IloCplex.Status.Unbounded) {
                 System.out.print("\n>>> Adding feasibility cut.\n");
                 
@@ -96,6 +96,7 @@ class BendersCallback implements IloCplex.Callback.Function {
                 context.rejectCandidate(feasibilityCut);
                 return;
             }
+            // 对偶问题最优
             if (status == IloCplex.Status.Optimal) {
                 double zmaster = masterProblem.getFlowCost(context);
                 if (zmaster < subProblem.getObjValue() - FctpSolution.EPS) {
@@ -104,7 +105,6 @@ class BendersCallback implements IloCplex.Callback.Function {
                     IloRange optimalityCut = subProblem.createOptimalityCut(
                             estFlowCost, open, demand, capacity);
                     context.rejectCandidate(optimalityCut);
-
                 } else {
                     System.out.println("\n>>> Accepting new incumbent with value "
                             + context.getCandidateObjective() + "\n");

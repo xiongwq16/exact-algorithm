@@ -22,7 +22,8 @@ class FctpSubProblem {
     private final int warehouseNum;
     private final int customerNum;
     
-    private final IloCplex dualLpSolver;
+    private final IloCplex dualSolver;
+    
     /**
      * 需求量约束的对偶变量，名称记为 demandDualVars[k]， <br>
      * 需求量约束：for k in customers: sum(flow[j][k], for j in warehouses) >= demand[k].
@@ -48,17 +49,17 @@ class FctpSubProblem {
         this.warehouseNum = warehouseNum;
         this.customerNum = customerNum;
                 
-        dualLpSolver = new IloCplex();
+        dualSolver = new IloCplex();
         // Create dual variables
         demandDualVars = new IloNumVar[customerNum];
         capacityDualVars = new IloNumVar[warehouseNum];
         varMap = new HashMap<>(customerNum + warehouseNum);
         for (int k = 0; k < customerNum; k++) {
-            demandDualVars[k] = dualLpSolver.numVar(0.0, Double.MAX_VALUE, "u_" + k);
+            demandDualVars[k] = dualSolver.numVar(0.0, Double.MAX_VALUE, "u_" + k);
             varMap.put(demandDualVars[k], k);
         }
         for (int j = 0; j < warehouseNum; j++) {
-            capacityDualVars[j] = dualLpSolver.numVar(0.0, Double.MAX_VALUE, "v_" + j);
+            capacityDualVars[j] = dualSolver.numVar(0.0, Double.MAX_VALUE, "v_" + j);
             varMap.put(capacityDualVars[j], customerNum + j);
         }
         
@@ -67,30 +68,30 @@ class FctpSubProblem {
         for (int j = 0; j < warehouseNum; j++) {
             for (int k = 0; k < customerNum; k++) {
                 // u[k] - v[j] >= flowCost[j][k]
-                constraints[j][k] = dualLpSolver.addLe(
-                        dualLpSolver.diff(demandDualVars[k], capacityDualVars[j]), flowCost[j][k]);
+                constraints[j][k] = dualSolver.addLe(
+                        dualSolver.diff(demandDualVars[k], capacityDualVars[j]), flowCost[j][k]);
             }
         }
         
         // Initial objective
-        dualLpSolver.addMaximize();
+        dualSolver.addMaximize();
         
         /*
          * Turn off the "presolve" reductions
          * if the presolver recognizes that the subproblem is infeasible, we do not get a dual ray
          */
-        dualLpSolver.setParam(IloCplex.Param.Preprocessing.Reduce, 0);
+        dualSolver.setParam(IloCplex.Param.Preprocessing.Reduce, 0);
         // Solve the subProblem(Dual Type) with dual simplex method
-        dualLpSolver.setParam(IloCplex.Param.RootAlgorithm, IloCplex.Algorithm.Dual);
+        dualSolver.setParam(IloCplex.Param.RootAlgorithm, IloCplex.Algorithm.Dual);
         
-        dualLpSolver.setOut(null);
+        dualSolver.setOut(null);
     }
 
     /**
      * Releases all Cplex objects attached to the SubProblem.
      */
     void end() {
-        dualLpSolver.end();
+        dualSolver.end();
     }
     
     /**
@@ -99,7 +100,7 @@ class FctpSubProblem {
      */
     double getFlowsBetween(int warehouseIndex, int customerIndex) 
             throws UnknownObjectException, IloException {
-        return dualLpSolver.getDual(constraints[warehouseIndex][customerIndex]);
+        return dualSolver.getDual(constraints[warehouseIndex][customerIndex]);
     }
     
     /*
@@ -130,24 +131,25 @@ class FctpSubProblem {
         }
         
         // 更新子问题的目标函数
-        IloLinearNumExpr objExpr = dualLpSolver.linearNumExpr();
+        IloLinearNumExpr objExpr = dualSolver.linearNumExpr();
         
         objExpr.addTerms(demand, demandDualVars);
         objExpr.addTerms(openCapacity, capacityDualVars);
         
-        dualLpSolver.getObjective().setExpr(objExpr);
+        dualSolver.getObjective().setExpr(objExpr);
         
-        dualLpSolver.solve();
-        return dualLpSolver.getStatus();
+        dualSolver.solve();
+        
+        return dualSolver.getStatus();
     }
     
     IloRange createFeasibilityCut(IloNumVar[] open, 
             double[] demand, double[] capacity) throws IloException {
-        IloLinearNumExpr ray = dualLpSolver.getRay();
+        IloLinearNumExpr ray = dualSolver.getRay();
         IloLinearNumExprIterator it = ray.linearIterator();
         
         double constant = 0;
-        IloNumExpr expr = dualLpSolver.numExpr();
+        IloNumExpr expr = dualSolver.numExpr();
         while (it.hasNext()) {
             IloNumVar var = it.nextNumVar();
             double value = it.getValue();
@@ -157,30 +159,30 @@ class FctpSubProblem {
                 constant += demand[index] * value;
             } else {
                 index = index - customerNum;
-                expr = dualLpSolver.sum(
-                        expr, dualLpSolver.prod(-capacity[index] * value, open[index]));
+                expr = dualSolver.sum(
+                        expr, dualSolver.prod(-capacity[index] * value, open[index]));
             }
         }
-        return dualLpSolver.le(dualLpSolver.sum(constant, expr), 0);
+        return dualSolver.le(dualSolver.sum(constant, expr), 0);
     }
     
     IloRange createOptimalityCut(IloNumVar estFlowCost, IloNumVar[] open, 
             double[] demand, double[] capacity) throws IloException {        
         double constant = 0;
         for (int k = 0; k < customerNum; k++) {
-            constant += demand[k] * dualLpSolver.getValue(demandDualVars[k]);
+            constant += demand[k] * dualSolver.getValue(demandDualVars[k]);
         }
-        IloLinearNumExpr expr = dualLpSolver.linearNumExpr(constant);
+        IloLinearNumExpr expr = dualSolver.linearNumExpr(constant);
         
         for (int j = 0; j < warehouseNum; j++) {
-            expr.addTerm(-capacity[j] * dualLpSolver.getValue(capacityDualVars[j]), open[j]);
+            expr.addTerm(-capacity[j] * dualSolver.getValue(capacityDualVars[j]), open[j]);
         }
         
-        return dualLpSolver.le(dualLpSolver.diff(expr, estFlowCost), 0);
+        return dualSolver.le(dualSolver.diff(expr, estFlowCost), 0);
     }
     
     double getObjValue() throws IloException {
-        return dualLpSolver.getObjValue();
+        return dualSolver.getObjValue();
     }
     
 }
