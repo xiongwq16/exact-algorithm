@@ -41,7 +41,7 @@ class ManualBenders {
          */
         FctpSolution fctpSol = masterProblem.solve();
         
-        if (fctpSol.getStatus() == CplexStatus.Optimal 
+        if (fctpSol.getStatus() == CplexStatus.Optimal
                 || fctpSol.getStatus() == CplexStatus.Feasible) {
             // 使用 BendersCallback 中的方法添加 flows 信息
             callback.addFlows(fctpSol);

@@ -18,8 +18,7 @@ public class FctpDemo {
         double meanCapMulti = 2.5;
         // mean fixed cost of warehouse
         double meanFixedCost = 500;
-        
-        // 随机种子
+        // 用于生成算例的随机种子
         int randomSeed = 72612;
         
         try {

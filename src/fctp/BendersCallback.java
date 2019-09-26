@@ -1,22 +1,26 @@
 package fctp;
 
 import ilog.concert.IloException;
+import ilog.concert.IloNumVar;
 import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
 
 class BendersCallback implements IloCplex.Callback.Function {
     private final int warehouseNum;
     private final int customerNum;
-    /** 子问题的初始化需要反复调用 fctpIns，因此直接作为类属性. */
-    private final Fctp fctpIns;
+    private final double[] demand;
+    private final double[] capacity;
+    private final double[][] flowCost;
     
-    private FctpMasterProblem masterProblem;
-    private FctpSubProblem[] subProblems;
+    private final FctpMasterProblem masterProblem;
+    /** 主问题中的流量成本变量. */
+    private final IloNumVar[] open;
+    private final IloNumVar estFlowCost;
+    private final FctpSubProblem[] subProblems;
     
     /*
      * 为了避免再次求解子问题来获取流量信息 flows[j][k]，
      * 这里根据求解过程中的主问题的当前最优目标值的更新，来保存对应的流量信息。
-     * 需要注意的需要使用线程安全的方式进行处理。
      */
     /** MasterProblem objective value. */
     private double incumbentValue;
@@ -24,11 +28,19 @@ class BendersCallback implements IloCplex.Callback.Function {
     private double[][] flowValues;
     
     BendersCallback(Fctp fctpIns, FctpMasterProblem masterProblem, int threadNum) {
+        // 算例信息
         warehouseNum = fctpIns.getWarehouseNum();
         customerNum = fctpIns.getCustomerNum();
+        demand = fctpIns.getDemand();
+        capacity = fctpIns.getCapacity();
+        flowCost = fctpIns.getFlowCost();
         
-        this.fctpIns = fctpIns;
+        // 主问题相关信息
         this.masterProblem = masterProblem;
+        this.estFlowCost = masterProblem.getEstFlowCostVar();
+        this.open = masterProblem.getOpenVar();
+        
+        // 子问题
         this.subProblems = new FctpSubProblem[threadNum];
         
         incumbentValue = Double.POSITIVE_INFINITY;
@@ -48,17 +60,17 @@ class BendersCallback implements IloCplex.Callback.Function {
         
         // setup
         if (context.inThreadUp()) {
-            subProblems[threadNo] = new FctpSubProblem(fctpIns);
-            System.out.printf(">>> subProblem %d set up.\n", threadNo);
+            System.out.printf("\n>>> subProblem %d set up.\n", threadNo);
+            subProblems[threadNo] = new FctpSubProblem(warehouseNum, customerNum, flowCost);
             return;
         }
         
         // teardown
         if (context.inThreadDown()) {
             // Clear the subproblem
-            subProblems[threadNo] = null;
+            System.out.printf("\n>>> subProblem %d tear down.\n", threadNo);
             subProblems[threadNo].end();
-            System.out.printf(">>> subProblem %d tear down.\n", threadNo);
+            subProblems[threadNo] = null;
             return;
         }
         
@@ -73,35 +85,36 @@ class BendersCallback implements IloCplex.Callback.Function {
             
             // 获取当前的线程对应的子问题，并求解
             FctpSubProblem subProblem = subProblems[threadNo];
-            IloCplex.Status status = subProblem.solve(openValues);
+            IloCplex.Status status = subProblem.solve(openValues, demand, capacity);
             
             // 对偶问题无界，原问题无解
             if (status == IloCplex.Status.Unbounded) {
-                // 添加可行割
-                IloRange feasibilityCut =  subProblem.getFeasibilityCut(masterProblem.getOpenVar());
-                context.rejectCandidate(feasibilityCut);
+                System.out.print("\n>>> Adding feasibility cut.\n");
                 
-                System.out.print(">>> Adding feasibility cut.\n");
+                // 构造可行割
+                IloRange feasibilityCut =  subProblem.createFeasibilityCut(open, demand, capacity);
+                context.rejectCandidate(feasibilityCut);
+                return;
             }
-            
             if (status == IloCplex.Status.Optimal) {
-                double estFlowCost = masterProblem.getFlowCost(context);
-                if (estFlowCost < subProblem.getObjValue() - FctpSolution.EPS) {
+                double zmaster = masterProblem.getFlowCost(context);
+                if (zmaster < subProblem.getObjValue() - FctpSolution.EPS) {
                     // 添加最优割
-                    IloRange optimalityCut = subProblem.getOptimalityCut(
-                            masterProblem.getEstFlowCostVar(), masterProblem.getOpenVar());
+                    System.out.print("\n>>> Adding optimality cut.\n");
+                    IloRange optimalityCut = subProblem.createOptimalityCut(
+                            estFlowCost, open, demand, capacity);
                     context.rejectCandidate(optimalityCut);
-                    
-                    System.out.print(">>> Adding optimality cut.\n");
-                    
+
                 } else {
+                    System.out.println("\n>>> Accepting new incumbent with value "
+                            + context.getCandidateObjective() + "\n");
                     storeFlows(subProblem, context.getCandidateObjective());
                 }
-                
+                return;
             }
-            return;
+            
         } else {
-            System.err.println("Callback was called from an invalid context: "
+            throw new IloException("Callback was called from an invalid context: "
                     + context.getId() + ".\n");
         }
         
@@ -125,10 +138,10 @@ class BendersCallback implements IloCplex.Callback.Function {
     /**
      * 当主问题找到了更好的解时，存储对应的流量信息 flows.
      *
-     * @param subProblem 当前进程处理的子问题 
+     * @param subProblem 当前处理的子问题 
      * @param masterObjValue 新的历史最优值
      */
-    private synchronized void storeFlows(FctpSubProblem subProblem, double masterObjValue) 
+    private void storeFlows(FctpSubProblem subProblem, double masterObjValue) 
             throws IloException {
         if (masterObjValue < incumbentValue) {
             incumbentValue = masterObjValue;

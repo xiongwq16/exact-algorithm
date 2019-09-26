@@ -103,13 +103,20 @@ class FctpMasterProblem {
      * 由于 masterSolver 被封装在 masterProblem 对象中，
      * 因此在 Callback 中对masterSolver 的操作需要借助“类方法”实现。
      * 根据 Benders 分解中 MasterProblem 与 SubProblem 的关系，需要实现以下几个方法：
-     * 1. 主问题中的流量成本值 - 用于判断
-     * 2. 主问题中的流量成本变量 - 用于生成“最优割”
-     * 3. 主问题中的仓库开关值 - 用于更新子问题的目标函数
-     * 4. 主问题中的仓库开关变量 - 用于生成“可行割”
+     * 1. 主问题中的仓库开关值 - 用于更新子问题的目标函数
+     * 2. 主问题中的仓库开关变量 - 用于生成“可行割”
+     * 3. 主问题中的流量成本值 - 用于判断是否添加最优割
+     * 4. 主问题中的流量成本变量 - 用于生成“最优割”
      * 方法实现见下方代码。
      */
+    IloNumVar[] getOpenVar() {
+        return open;
+    }
     
+    IloNumVar getEstFlowCostVar() {
+        return estFlowCost;
+    }
+
     /**
      * 获取流量成本 - “最优割”的右侧项 {@link #estFlowCost}.
      * 
@@ -130,13 +137,4 @@ class FctpMasterProblem {
     double[] getOpenValus(final IloCplex.Callback.Context context) throws IloException {
         return context.getCandidatePoint(open);
     }
-    
-    public IloNumVar[] getOpenVar() {
-        return open;
-    }
-    
-    public IloNumVar getEstFlowCostVar() {
-        return estFlowCost;
-    }
-
 }
