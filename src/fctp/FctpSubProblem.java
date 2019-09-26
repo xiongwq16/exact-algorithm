@@ -120,10 +120,10 @@ class FctpSubProblem {
      * @param openValues 仓库开设信息
      * @param demand 客户需求
      * @param capacity 仓库容量
-     * @return
-     * @throws IloException
+     * @return 解的状态
      */
-    IloCplex.Status solve(double[] openValues, double[] demand, double[] capacity) throws IloException {
+    IloCplex.Status solve(double[] openValues, double[] demand, double[] capacity) 
+            throws IloException {
         // 根据仓库开设情况更新的容量
         double[] openCapacity = new double[warehouseNum];
         for (int j = 0; j < warehouseNum; j++) {
