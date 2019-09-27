@@ -19,8 +19,8 @@ import java.util.HashMap;
  * @since JDK1.8
  */
 class FctpSubProblem {
-    private final int warehouseNum;
-    private final int customerNum;
+    private static int warehouseNum;
+    private static int customerNum;
     
     private final IloCplex dualSolver;
     
@@ -34,36 +34,46 @@ class FctpSubProblem {
      * 容量约束：for j in warehouses: -sum(flow[j][k], for k in customers) >= -capacity[j] * open[j].
      */
     private final IloNumVar[] capacityDualVars;
-    
-    /**
-     * 确定极射线的值时需要查询对应变量的位置，使用 HashMap 可提高查询效率 O(1)，<br>
-     * Key：对偶形式的子问题的决策变量 {@link #demandDualVars} and {@link #capacityDualVars}， <br>
-     * Value：注意 {@link #capacityDualVars} 的 Value 为 原索引号 + customerNum.
-     */
-    private final HashMap<IloNumVar, Integer> varMap;
+    /** 记录目标函数系数，便于添加割平面. */
+    private final HashMap<IloNumVar, IloLinearNumExpr> objCoeff;
+    private static final double loaderFactor = 0.75;
     
     /** 对偶问题约束，constraints[j][k] 对应的对偶变量即为原问题中的 仓库 j 供应给客户 k 的货量. */
-    private IloRange[][] constraints;
+    private final IloRange[][] constraints;
     
-    FctpSubProblem(int warehouseNum, int customerNum, double[][] flowCost) throws IloException {
-        this.warehouseNum = warehouseNum;
-        this.customerNum = customerNum;
+    FctpSubProblem(Fctp fctpIns, FctpMasterProblem masterProblem) throws IloException {
+        warehouseNum = fctpIns.getWarehouseNum();
+        customerNum = fctpIns.getCustomerNum();
+        double[] demand = fctpIns.getDemand();
+        double[] capacity = fctpIns.getCapacity();
                 
         dualSolver = new IloCplex();
         // Create dual variables
         demandDualVars = new IloNumVar[customerNum];
         capacityDualVars = new IloNumVar[warehouseNum];
-        varMap = new HashMap<>(customerNum + warehouseNum);
+        objCoeff = new HashMap<>((int)((customerNum + warehouseNum) / loaderFactor) + 1);
         for (int k = 0; k < customerNum; k++) {
             demandDualVars[k] = dualSolver.numVar(0.0, Double.MAX_VALUE, "u_" + k);
-            varMap.put(demandDualVars[k], k);
+            
+            // 保存需求量约束对应的对偶变量在子问题目标函数中的系数
+            objCoeff.put(demandDualVars[k], dualSolver.linearNumExpr(demand[k]));
         }
+        
+        IloLinearNumExpr expr = dualSolver.linearNumExpr();
         for (int j = 0; j < warehouseNum; j++) {
             capacityDualVars[j] = dualSolver.numVar(0.0, Double.MAX_VALUE, "v_" + j);
-            varMap.put(capacityDualVars[j], customerNum + j);
+            
+            /*
+             * 保存容量约束对应的对偶变量在子问题目标函数中的系数
+             * 注意这里的右侧项存放的变量 -capacity[j] * open[j]
+             */
+            expr.clear();
+            expr.addTerm(-capacity[j], masterProblem.getOpenVar()[j]);
+            objCoeff.put(capacityDualVars[j], expr);
         }
         
         // Dual Constrains
+        double[][] flowCost = fctpIns.getFlowCost();
         constraints = new IloRange[warehouseNum][customerNum];
         for (int j = 0; j < warehouseNum; j++) {
             for (int k = 0; k < customerNum; k++) {
@@ -96,7 +106,7 @@ class FctpSubProblem {
     
     /**
      * 求解的是子问题的对偶问题，需要通过获取约束对偶变量的方式获取流量信息. <br>
-     * @return
+     * @return 指定仓库和客户之间的流量
      */
     double getFlowsBetween(int warehouseIndex, int customerIndex) 
             throws UnknownObjectException, IloException {
@@ -122,19 +132,22 @@ class FctpSubProblem {
      * @param capacity 仓库容量
      * @return 解的状态
      */
-    IloCplex.Status solve(double[] openValues, double[] demand, double[] capacity) 
-            throws IloException {
+    IloCplex.Status solve(double[] openValues, double[] capacity) throws IloException {
+        IloNumExpr objExpr = dualSolver.numExpr();
+        
         // 根据仓库开设情况更新的容量
         double[] openCapacity = new double[warehouseNum];
         for (int j = 0; j < warehouseNum; j++) {
-            openCapacity[j] = -openValues[j] * capacity[j];
+            openCapacity[j] = 0;
+            if (openValues[j] > FctpMasterProblem.ROUNDUP) {
+                openCapacity[j] = -openValues[j] * capacity[j];
+            }
+            objExpr = dualSolver.sum(objExpr, dualSolver.prod(openCapacity[j], capacityDualVars[j]));
         }
         
-        // 更新子问题的目标函数
-        IloLinearNumExpr objExpr = dualSolver.linearNumExpr();
-        
-        objExpr.addTerms(demand, demandDualVars);
-        objExpr.addTerms(openCapacity, capacityDualVars);
+        for (int k = 0; k < customerNum; k++) {
+            objExpr = dualSolver.sum(objExpr, dualSolver.prod(objCoeff.get(demandDualVars[k]), demandDualVars[k]));
+        }
         
         dualSolver.getObjective().setExpr(objExpr);
         
@@ -143,39 +156,31 @@ class FctpSubProblem {
         return dualSolver.getStatus();
     }
     
-    IloRange createFeasibilityCut(IloNumVar[] open, 
-            double[] demand, double[] capacity) throws IloException {
+    IloRange createFeasibilityCut() throws IloException {
         IloLinearNumExpr ray = dualSolver.getRay();
         IloLinearNumExprIterator it = ray.linearIterator();
         
-        double constant = 0;
         IloNumExpr expr = dualSolver.numExpr();
         while (it.hasNext()) {
             IloNumVar var = it.nextNumVar();
             double value = it.getValue();
-            
-            int index = varMap.get(var);
-            if (index < customerNum) {
-                constant += demand[index] * value;
-            } else {
-                index = index - customerNum;
-                expr = dualSolver.sum(
-                        expr, dualSolver.prod(-capacity[index] * value, open[index]));
-            }
+            expr = dualSolver.sum(expr, dualSolver.prod(value, objCoeff.get(var)));
         }
-        return dualSolver.le(dualSolver.sum(constant, expr), 0);
+        return dualSolver.le(expr, 0);
     }
     
-    IloRange createOptimalityCut(IloNumVar estFlowCost, IloNumVar[] open, 
-            double[] demand, double[] capacity) throws IloException {        
-        double constant = 0;
+    IloRange createOptimalityCut(IloNumVar estFlowCost) throws IloException {        
+        IloNumExpr expr = dualSolver.numExpr();
+        
+        double dualVal;
         for (int k = 0; k < customerNum; k++) {
-            constant += demand[k] * dualSolver.getValue(demandDualVars[k]);
+            dualVal = dualSolver.getValue(demandDualVars[k]);
+            expr = dualSolver.sum(expr, dualSolver.prod(objCoeff.get(demandDualVars[k]), dualVal));
         }
-        IloLinearNumExpr expr = dualSolver.linearNumExpr(constant);
         
         for (int j = 0; j < warehouseNum; j++) {
-            expr.addTerm(-capacity[j] * dualSolver.getValue(capacityDualVars[j]), open[j]);
+            dualVal = dualSolver.getValue(capacityDualVars[j]);
+            expr = dualSolver.sum(expr, dualSolver.prod(objCoeff.get(capacityDualVars[j]), dualVal));
         }
         
         return dualSolver.le(dualSolver.diff(expr, estFlowCost), 0);

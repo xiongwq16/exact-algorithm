@@ -15,7 +15,7 @@ class FctpSolution {
     /**
      * EPS limits how small a flow can be and still be treated as nonzero.
     */
-    public static final double EPS = 1e-6;
+    static final double EPS = 1e-6;
     
     /** The milliseconds to seconds conversion factor. */
     private static final double MS_TO_SEC = 0.001;
