@@ -9,7 +9,7 @@ import java.util.Random;
  * @version V1.0
  * @since JDK1.8
  */
-class Fctp {
+public class Fctp {
     private final int warehouseNum;
     private final int customerNum;
 
@@ -18,7 +18,7 @@ class Fctp {
     private final double[] fixedCost;
     private final double[][] flowCost;
 
-    Fctp(int warehouseNum, int customerNum, 
+    public Fctp(int warehouseNum, int customerNum, 
             double meanCapMulti, double meanFixedCost, long seed) {
         this.warehouseNum = warehouseNum;
         this.customerNum = customerNum;
@@ -53,27 +53,27 @@ class Fctp {
         
     }
     
-    int getWarehouseNum() {
+    public int getWarehouseNum() {
         return warehouseNum;
     }
 
-    int getCustomerNum() {
+    public int getCustomerNum() {
         return customerNum;
     }
 
-    double[] getDemand() {
+    public double[] getDemand() {
         return demand;
     }
 
-    double[] getCapacity() {
+    public double[] getCapacity() {
         return capacity;
     }
     
-    double[] getFixedCost() {
+    public double[] getFixedCost() {
         return fixedCost;
     }
     
-    double[][] getFlowCost() {
+    public double[][] getFlowCost() {
         return flowCost;
     }
 }
