@@ -47,7 +47,7 @@ class FctpSolution {
         this.status = status;
     }
     
-    void setSolveTime(long solveTime) {
+    public void setSolveTime(long solveTime) {
         this.solveTime = solveTime * MS_TO_SEC;
     }
     
@@ -60,20 +60,22 @@ class FctpSolution {
      * 
      * @return 解的状态（主问题）
      */
-    CplexStatus getStatus() {
+    public CplexStatus getStatus() {
         return status;
     }
     
     /**
      * 输出 FCTP 的解，包括解的类型，总成本，使用的仓库，供应的客户（及供应量）.
      */
-    void output() {
+    public void output() {
         StringBuilder sb = new StringBuilder();
-        
-        sb.append(String.format("It takes %.2f seconds to find the %s solution with cost %.2f", 
-                solveTime, status, totalCost));
+        sb.append(String.format("It takes %.3f seconds to find the %s solution.\n", 
+                solveTime, status));
         
         int openWarehouseNum = openWarehouses.size();
+        sb.append(String.format("%d warehouse is open and total cost is %.3f.", 
+                openWarehouseNum, totalCost));
+        
         int customerNum = flows[0].length;
         for (int j = 0; j < openWarehouseNum; j++) {
             int warehouseIndex = openWarehouses.get(j);

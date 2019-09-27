@@ -94,7 +94,7 @@ class FctpMasterProblem {
     
     /*
      * 由于 masterSolver 被封装在 masterProblem 对象中，
-     * 因此在 Callback 中对masterSolver 的操作需要借助“类方法”实现。
+     * 因此在 Callback 中对 masterSolver 的操作需要借助“类方法”实现。
      * 根据 Benders 分解中 MasterProblem 与 SubProblem 的关系，需要实现以下几个方法：
      * 1. 主问题中的仓库开关变量 - 用于“最优割”以及“可行割”的生成
      * 2. 主问题中的流量成本变量 - 用于“最优割”的生成
@@ -107,4 +107,5 @@ class FctpMasterProblem {
     IloNumVar getEstFlowCostVar() {
         return estFlowCost;
     }
+    
 }

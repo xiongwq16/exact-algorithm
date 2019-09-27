@@ -9,7 +9,7 @@ import java.util.Random;
  * @version V1.0
  * @since JDK1.8
  */
-public class Fctp {
+class Fctp {
     private final int warehouseNum;
     private final int customerNum;
 
@@ -18,12 +18,11 @@ public class Fctp {
     private final double[] fixedCost;
     private final double[][] flowCost;
 
-    public Fctp(int warehouseNum, int customerNum, 
-            double meanCapMulti, double meanFixedCost, long seed) {
+    Fctp(int warehouseNum, int customerNum, double meanCapMulti, double meanFixedCost, long seed) {
         this.warehouseNum = warehouseNum;
         this.customerNum = customerNum;
 
-        // 随机种子设置
+        // 设置用于生成算例的随机种子
         Random rng = new Random(seed);
 
         // 客户需求量随机设置
@@ -43,37 +42,37 @@ public class Fctp {
             capacity[j] = 2 * meanCapacity * rng.nextDouble();
             fixedCost[j] = 2 * meanFixedCost * rng.nextDouble();
         }
-        
+
         flowCost = new double[warehouseNum][customerNum];
         for (int j = 0; j < warehouseNum; j++) {
             for (int k = 0; k < customerNum; k++) {
                 flowCost[j][k] = rng.nextDouble();
             }
         }
-        
+
     }
-    
-    public int getWarehouseNum() {
+
+    int getWarehouseNum() {
         return warehouseNum;
     }
 
-    public int getCustomerNum() {
+    int getCustomerNum() {
         return customerNum;
     }
 
-    public double[] getDemand() {
+    double[] getDemand() {
         return demand;
     }
 
-    public double[] getCapacity() {
+    double[] getCapacity() {
         return capacity;
     }
-    
-    public double[] getFixedCost() {
+
+    double[] getFixedCost() {
         return fixedCost;
     }
-    
-    public double[][] getFlowCost() {
+
+    double[][] getFlowCost() {
         return flowCost;
     }
 }
