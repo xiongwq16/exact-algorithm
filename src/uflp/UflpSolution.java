@@ -14,7 +14,7 @@ import java.util.ArrayList;
 class UflpSolution {
     /** The milliseconds to seconds conversion factor. */
     private static final double MS_TO_SEC = 0.001;
-
+    
     private CplexStatus status;
     private double solveTime;
 

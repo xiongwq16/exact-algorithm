@@ -15,7 +15,7 @@ import ilog.cplex.IloCplex;
  */
 class CspPriceProblem {
     /** 需要的木材种类. */
-    private final int kinds;
+    private int kinds;
     
     private IloCplex pricingSolver;
     /** 切割方案对应的每种木材的份数. */

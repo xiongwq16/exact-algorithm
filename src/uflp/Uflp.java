@@ -12,12 +12,12 @@ import java.io.IOException;
  * @since JDK1.8
  */
 class Uflp {
-    private final int warehouseNum;
-    private final int customerNum;
+    private int warehouseNum;
+    private int customerNum;
     /** 仓库 j 的固定成本. */
-    private final double[] fixedCost;
+    private double[] fixedCost;
     /** 连接成本，supplyCost[j]k] 由仓库 j 服务客户 k 的供应成本. */
-    private final double[][] supplyCost;
+    private double[][] supplyCost;
 
     /**
      * 读取算例数据新建 UFLP 实例，算例采用Kochetov and Ivanenko 生成的 UFLP's Euclidean benchmark.
@@ -40,7 +40,7 @@ class Uflp {
             String[] costData = line.split("\\s+");
             int warehouseIndex = Integer.parseInt(costData[0]) - 1;
             fixedCost[warehouseIndex] = Double.parseDouble(costData[1]);
-
+            
             for (int k = 2; k < costData.length; k++) {
                 supplyCost[warehouseIndex][k - 2] = Double.parseDouble(costData[k]);
             }

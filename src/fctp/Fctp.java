@@ -10,13 +10,13 @@ import java.util.Random;
  * @since JDK1.8
  */
 class Fctp {
-    private final int warehouseNum;
-    private final int customerNum;
+    private int warehouseNum;
+    private int customerNum;
 
-    private final double[] demand;
-    private final double[] capacity;
-    private final double[] fixedCost;
-    private final double[][] flowCost;
+    private double[] demand;
+    private double[] capacity;
+    private double[] fixedCost;
+    private double[][] flowCost;
 
     Fctp(int warehouseNum, int customerNum, double meanCapMulti, double meanFixedCost, long seed) {
         this.warehouseNum = warehouseNum;

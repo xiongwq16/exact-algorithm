@@ -18,11 +18,11 @@ import ilog.cplex.IloCplex.UnknownObjectException;
  * @since JDK1.8
  */
 class ManualBenders {
-    private final Fctp fctpIns;
+    private Fctp fctpIns;
     private FctpMasterProblem masterProblem;
     /** 主问题中的流量成本变量. */
-    private final IloNumVar[] open;
-    private final IloNumVar estFlowCost;
+    private IloNumVar[] open;
+    private IloNumVar estFlowCost;
     
     /** MasterProblem incumbent value. */
     private double incumbentValue;
@@ -30,7 +30,7 @@ class ManualBenders {
     private double[][] flowValues;
     
     /** 子问题是否采用对偶形式. */
-    private final boolean isSubProblemDual;
+    private boolean isSubProblemDual;
 
     ManualBenders(boolean isSubProblemDual, int warehouseNum, int customerNum, 
             double meanCapMulti, double meanFixedCost, int seed) throws IloException {
@@ -74,10 +74,10 @@ class ManualBenders {
     }
 
     private class BendersCallback implements IloCplex.Callback.Function {
-        private final FctpSubProblem[] subProblems;
+        private AbstractFctpSubProblem[] subProblems;
         
         BendersCallback(int threadNum) {
-            this.subProblems = new FctpSubProblem[threadNum];
+            this.subProblems = new AbstractFctpSubProblem[threadNum];
         }
 
         /**
@@ -116,13 +116,14 @@ class ManualBenders {
                 // 获取主问题中的仓库开设决策变量的取值
                 double[] openValues = context.getCandidatePoint(open);                
                 // 获取当前的线程对应的子问题，并求解
-                FctpSubProblem subProblem = subProblems[threadNo];
+                AbstractFctpSubProblem subProblem = subProblems[threadNo];
                 IloCplex.Status status = subProblem.solve(openValues, fctpIns.getCapacity());
 
-                // 原问题无解或对偶问题无界
-                if ((isSubProblemDual && status == IloCplex.Status.Unbounded) 
-                        || (!isSubProblemDual && status == IloCplex.Status.Infeasible)) {
-                    
+                // 原问题无解(对偶问题无界)
+                boolean isPrimalInfeasible = (!isSubProblemDual && status == IloCplex.Status.Infeasible)
+                        || (isSubProblemDual && status == IloCplex.Status.Unbounded);
+                
+                if (isPrimalInfeasible) {
                     System.out.print("\n>>> Adding feasibility cut.\n");
                     
                     // 构造可行割
@@ -176,7 +177,7 @@ class ManualBenders {
          * @throws IloException
          * @throws UnknownObjectException
          */
-        private synchronized void storeFlows(FctpSubProblem subProblem, double masterObjValue)
+        private synchronized void storeFlows(AbstractFctpSubProblem subProblem, double masterObjValue)
                 throws UnknownObjectException, IloException {
             if (masterObjValue < incumbentValue) {
                 incumbentValue = masterObjValue;

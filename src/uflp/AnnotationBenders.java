@@ -22,8 +22,8 @@ class AnnotationBenders {
     /** supply[j][k] = 1 if warehouse j supplies customer k, 0 if not. */
     private IloNumVar[][] supply;
 
-    private final int warehouseNum;
-    private final int customerNum;
+    private int warehouseNum;
+    private int customerNum;
 
     AnnotationBenders(String filename, int randomSeed) throws IOException, IloException {
         Uflp uflpIns = new Uflp(filename);
@@ -98,7 +98,7 @@ class AnnotationBenders {
         uflpSolver.setParam(IloCplex.Param.Benders.Strategy, IloCplex.BendersStrategy.User);
     }
     
-    private void setRandomSeed(final int randomSeed) throws IloException {
+    private void setRandomSeed(int randomSeed) throws IloException {
         uflpSolver.setParam(IloCplex.Param.RandomSeed, randomSeed);
     }
 

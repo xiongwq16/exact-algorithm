@@ -21,7 +21,7 @@ class FctpSolution {
     private static final double MS_TO_SEC = 0.001;
     
     private double totalCost;
-    private final double[][] flows;
+    private double[][] flows;
     private ArrayList<Integer> openWarehouses;
     
     private CplexStatus status;

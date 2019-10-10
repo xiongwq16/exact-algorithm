@@ -19,10 +19,10 @@ import java.util.Arrays;
  */
 class CspMasterProblem {
     /** 所需木材种类. */
-    private final int kinds;
+    private int kinds;
     
-    private final IloCplex rmlpSolver;
-    private final IloRange[] amountCstrs;
+    private IloCplex rmlpSolver;
+    private IloRange[] amountCstrs;
 
     /** 求解过程中生成的切割方案数. */
     private int patternNum;

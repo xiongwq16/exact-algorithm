@@ -17,16 +17,16 @@ class FctpMasterProblem {
     /** The cutoff for rounding values of binary variables up. */
     static final double ROUNDUP = 0.5;
 
-    private final int warehouseNum;
-    private final int customerNum;
+    private int warehouseNum;
+    private int customerNum;
 
-    private final IloCplex masterSolver;
+    private IloCplex masterSolver;
 
     /** open[j] = 1 表示仓库 j 开始，否则不开设. */
-    private final IloNumVar[] open;
+    private IloNumVar[] open;
 
     /** 子问题的最优值 - 流量成本，也是“最优割”的右侧项. */
-    private final IloNumVar estFlowCost;
+    private IloNumVar estFlowCost;
 
     FctpMasterProblem(Fctp fctpIns) throws IloException {
         warehouseNum = fctpIns.getWarehouseNum();
@@ -100,6 +100,7 @@ class FctpMasterProblem {
      * 2. 主问题中的流量成本变量 - 用于“最优割”的生成
      * 将上述变量作为自定义的 BensersCallback 的属性，同时可以结合回调上下文的获取变量值
      */
+    
     IloNumVar[] getOpenVar() {
         return open;
     }

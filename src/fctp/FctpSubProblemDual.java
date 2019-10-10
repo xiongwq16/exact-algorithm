@@ -21,25 +21,25 @@ import java.util.HashMap;
  * @version V1.0
  * @since JDK1.8
  */
-class FctpSubProblemDual extends FctpSubProblem {
+class FctpSubProblemDual extends AbstractFctpSubProblem {
     /**
      * 需求量约束的对偶变量 <br>
      * 需求量约束：for k in customers: <br>
      * sum(flow[j][k], for j in warehouses) >= demand[k].
      */
-    private final IloNumVar[] demandDualVars;
+    private IloNumVar[] demandDualVars;
     /**
      * 容量约束的对偶变量 <br>
      * 容量约束：for j in warehouses: <br>
      * -sum(flow[j][k], for k in customers) >= -capacity[j] * open[j].
      */
-    private final IloNumVar[] capacityDualVars;
+    private IloNumVar[] capacityDualVars;
     
     /** 记录目标函数系数，便于生成割平面（重要）. */
-    private final HashMap<IloNumVar, IloLinearNumExpr> objCoeff;
+    private HashMap<IloNumVar, IloLinearNumExpr> objCoeff;
     
     /** 对偶问题约束，constraints[j][k] 对应的对偶变量即为原问题中的 仓库 j 供应给客户 k 的货量. */
-    private final IloRange[][] constraints;
+    private IloRange[][] constraints;
     
     FctpSubProblemDual(Fctp fctpIns, FctpMasterProblem masterProblem) throws IloException {
         super(fctpIns);
@@ -47,7 +47,7 @@ class FctpSubProblemDual extends FctpSubProblem {
         // 创建决策变量，并保存对应的目标函数系数
         demandDualVars = new IloNumVar[customerNum];
         capacityDualVars = new IloNumVar[warehouseNum];        
-        objCoeff = new HashMap<>((int)((customerNum + warehouseNum) / loaderFactor) + 1);
+        objCoeff = new HashMap<>((int)((customerNum + warehouseNum) / LOADER_FACTOR) + 1);
         
         double[] demand = fctpIns.getDemand();
         for (int k = 0; k < customerNum; k++) {

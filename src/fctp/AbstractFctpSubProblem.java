@@ -6,21 +6,30 @@ import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
 import ilog.cplex.IloCplex.UnknownObjectException;
 
-abstract class FctpSubProblem {
-    final int warehouseNum;
-    final int customerNum;
+abstract class AbstractFctpSubProblem {
+    int warehouseNum;
+    int customerNum;
 
-    final IloCplex subSolver;
+    IloCplex subSolver;
 
-    static final double loaderFactor = 0.75;
+    static final double LOADER_FACTOR = 0.75;
 
-    FctpSubProblem(Fctp fctpIns) throws IloException {
+    AbstractFctpSubProblem(Fctp fctpIns) throws IloException {
         warehouseNum = fctpIns.getWarehouseNum();
         customerNum = fctpIns.getCustomerNum();
 
         subSolver = new IloCplex();
     }
     
+    /**
+     * 获取指定仓库和客户之间的流量.
+     * 
+     * @param warehouseIndex 仓库索引
+     * @param customerIndex 客户索引
+     * @return 指定的仓库和客户之间的流量
+     * @throws UnknownObjectException 索引错误异常
+     * @throws IloException
+     */
     abstract double getFlowBetween(int warehouseIndex, int customerIndex) 
             throws UnknownObjectException, IloException;
 
@@ -46,6 +55,12 @@ abstract class FctpSubProblem {
      */
     abstract IloCplex.Status solve(double[] openValues, double[] capacity) throws IloException;
     
+    /**
+     * 生成“可行割”.
+     * 
+     * @return 可行割
+     * @throws IloException
+     */
     abstract IloRange createFeasibilityCut() throws IloException;
 
     /**

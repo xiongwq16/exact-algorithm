@@ -21,15 +21,15 @@ import java.util.HashMap;
  * @version V1.0
  * @since JDK1.8
  */
-class FctpSubProblemPrimal extends FctpSubProblem {
+class FctpSubProblemPrimal extends AbstractFctpSubProblem {
     /** flows[]j[k] 表示仓库 j 到 客户 k 的流量. */
-    private final IloNumVar[][] flows;
+    private IloNumVar[][] flows;
     /** 客户需求量约束. */
-    private final IloRange[] demandCstr;
+    private IloRange[] demandCstr;
     /** 仓库容量约束，关闭的仓库容量为 0. */
-    private final IloRange[] capacityCstr;
+    private IloRange[] capacityCstr;
     /** 约束右侧项. */
-    private final HashMap<IloConstraint, IloLinearNumExpr> rhs;
+    private HashMap<IloConstraint, IloLinearNumExpr> rhs;
     
     FctpSubProblemPrimal(Fctp fctpIns, FctpMasterProblem masterProblem) throws IloException {
         super(fctpIns);
@@ -55,7 +55,7 @@ class FctpSubProblemPrimal extends FctpSubProblem {
          * 需求量约束:
          * for k in customers: sum(flow[j][k], for j in warehouses) >= demand[k]
          */
-        rhs = new HashMap<>((int)((warehouseNum + customerNum) / loaderFactor) + 1);
+        rhs = new HashMap<>((int)((warehouseNum + customerNum) / LOADER_FACTOR) + 1);
         demandCstr = new IloRange[customerNum];
         for (int k = 0; k < customerNum; k++) {
             expr.clear();

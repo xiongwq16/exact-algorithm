@@ -14,11 +14,11 @@ import java.util.ArrayList;
  */
 class Csp {
     /** 原木料长度. */
-    private final double rollLength;
+    private double rollLength;
     /** 各类木材的要求长度. */
-    private final double[] size;
+    private double[] size;
     /** 各类木材的要求数量. */
-    private final double[] amount;
+    private double[] amount;
 
     /**
      * 读取算例数据创建 CutStock Problem 实例.
