@@ -9,8 +9,7 @@ import ilog.concert.IloException;
  * @version V1.0
  * @since JDK1.8
  */
-public class FctpDemo {
-
+class FctpDemo {
     public static void main(String[] args) throws IloException {
         int warehouseNum = 50;
         int customerNum = 4000;
@@ -23,7 +22,6 @@ public class FctpDemo {
         
         // 是否采用子问题的对偶形式
         boolean isSubProblemDual = false;
-
         try {
             ManualBenders mb = new ManualBenders(isSubProblemDual, warehouseNum, customerNum, 
                     meanCapMulti, meanFixedCost, randomSeed);

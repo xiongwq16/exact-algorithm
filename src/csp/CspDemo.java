@@ -11,8 +11,7 @@ import java.io.IOException;
  * @version V1.0
  * @since JDK1.8
  */
-public class CspDemo {
-    
+class CspDemo {
     public static void main(String[] args) throws IOException, IloException {
         String filename = "./instance/cutstock.txt";
         try {
