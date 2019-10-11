@@ -3,6 +3,7 @@ package fctp;
 import ilog.concert.IloException;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
+import ilog.cplex.IloCplex.Param;
 
 import java.util.ArrayList;
 
@@ -14,9 +15,6 @@ import java.util.ArrayList;
  * @since JDK1.8
  */
 class FctpMasterProblem {
-    /** The cutoff for rounding values of binary variables up. */
-    static final double ROUNDUP = 0.5;
-
     private int warehouseNum;
     private int customerNum;
 
@@ -68,7 +66,7 @@ class FctpMasterProblem {
             ArrayList<Integer> openWarehouses = new ArrayList<>();
             double[] warehouseOpenValue = masterSolver.getValues(open);
             for (int j = 0; j < warehouseNum; j++) {
-                if (warehouseOpenValue[j] > ROUNDUP) {
+                if (warehouseOpenValue[j] > Parameters.ROUNDUP) {
                     openWarehouses.add(j);
                 }
             }

@@ -14,28 +14,25 @@ import java.io.IOException;
  */
 class UflpDemo {
     private enum Strategy {
-        /**
-         * 执行传统分支和界限；忽略任何 Benders 注释，也不使用 Benders 算法.
-         */
+        /** 执行传统分支和界限；忽略任何 Benders 注释，也不使用 Benders 算法. */
         Off,
 
         /**
-         * CPLEX自动分解模型，忽略可能提供的任何注释： 将所有整数变量放入到主问题，将所有连续变量放入到子问题，进一步分解此子问题（如果可能）.
+         * CPLEX自动分解模型，忽略可能提供的任何注释：<br>
+         * 将所有整数变量放入到主问题，将所有连续变量放入到子问题，进一步分解此子问题（如果可能）.
          */
         Full,
 
-        /**
-         * CPLEX 根据注释确定主问题， 并尝试将剩余的变量分解成不相关的子问题并交给不同的Worker.
-         */
+        /** CPLEX 根据注释确定主问题， 并尝试将剩余的变量分解成不相关的子问题并交给不同的Worker. */
         Workers,
-
+        
         /** CPLEX根据注释分解模型. */
         User
     }
 
     public static void main(String[] args) throws IOException, IloException {
         // 算例路径
-        String filename = "./instance/uflp/Euclid/111EuclS.txt";
+        String filename = "./instances/uflp/Euclid/111EuclS.txt";
         // 随机种子
         int randomSeed = 1024;
         

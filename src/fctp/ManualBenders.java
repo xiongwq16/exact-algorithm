@@ -135,7 +135,7 @@ class ManualBenders {
                 // 原问题或对偶问题最优
                 if (status == IloCplex.Status.Optimal) {
                     double zStar = context.getCandidatePoint(estFlowCost);
-                    if (zStar < subProblem.getObjValue() - FctpSolution.EPS) {
+                    if (zStar < subProblem.getObjValue() - Parameters.EPS) {
                         System.out.print("\n>>> Adding optimality cut.\n");
                         // 构造最优割
                         IloRange optimalityCut = subProblem.createOptimalityCut(estFlowCost);

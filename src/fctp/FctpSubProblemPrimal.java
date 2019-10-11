@@ -55,7 +55,7 @@ class FctpSubProblemPrimal extends AbstractFctpSubProblem {
          * 需求量约束:
          * for k in customers: sum(flow[j][k], for j in warehouses) >= demand[k]
          */
-        rhs = new HashMap<>((int)((warehouseNum + customerNum) / LOADER_FACTOR) + 1);
+        rhs = new HashMap<>((int)((warehouseNum + customerNum) / Parameters.LOADER_FACTOR) + 1);
         demandCstr = new IloRange[customerNum];
         for (int k = 0; k < customerNum; k++) {
             expr.clear();
@@ -103,7 +103,7 @@ class FctpSubProblemPrimal extends AbstractFctpSubProblem {
     IloCplex.Status solve(double[] openValues, double[] capacity) throws IloException {
         // 根据仓库开设情况更新的容量，并更新子问题的容量约束 - 右侧项
         for (int j = 0; j < warehouseNum; j++) {
-            if (openValues[j] >= FctpMasterProblem.ROUNDUP) {
+            if (openValues[j] >= Parameters.ROUNDUP) {
                 capacityCstr[j].setUB(capacity[j]);
             } else {
                 capacityCstr[j].setUB(0);

@@ -11,9 +11,7 @@ abstract class AbstractFctpSubProblem {
     int customerNum;
 
     IloCplex subSolver;
-
-    static final double LOADER_FACTOR = 0.75;
-
+    
     AbstractFctpSubProblem(Fctp fctpIns) throws IloException {
         warehouseNum = fctpIns.getWarehouseNum();
         customerNum = fctpIns.getCustomerNum();

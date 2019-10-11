@@ -47,7 +47,7 @@ class FctpSubProblemDual extends AbstractFctpSubProblem {
         // 创建决策变量，并保存对应的目标函数系数
         demandDualVars = new IloNumVar[customerNum];
         capacityDualVars = new IloNumVar[warehouseNum];        
-        objCoeff = new HashMap<>((int)((customerNum + warehouseNum) / LOADER_FACTOR) + 1);
+        objCoeff = new HashMap<>((int)((customerNum + warehouseNum) / Parameters.LOADER_FACTOR) + 1);
         
         double[] demand = fctpIns.getDemand();
         for (int k = 0; k < customerNum; k++) {
@@ -106,7 +106,7 @@ class FctpSubProblemDual extends AbstractFctpSubProblem {
         double[] openCapacity = new double[warehouseNum];
         for (int j = 0; j < warehouseNum; j++) {
             openCapacity[j] = 0;
-            if (openValues[j] > FctpMasterProblem.ROUNDUP) {
+            if (openValues[j] > Parameters.ROUNDUP) {
                 openCapacity[j] = -capacity[j];
             }
             objExpr = subSolver.sum(objExpr, 

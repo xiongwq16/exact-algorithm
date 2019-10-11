@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 class CspDemo {
     public static void main(String[] args) throws IOException, IloException {
-        String filename = "./instance/cutstock.txt";
+        String filename = "./instances/cutstock.txt";
         try {
             // 调用列生成求解算例并输出切割方案
             ColumnGeneration cg = new ColumnGeneration(filename);

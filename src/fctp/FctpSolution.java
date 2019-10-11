@@ -11,15 +11,7 @@ import java.util.ArrayList;
  * @version V1.0
  * @since JDK1.8
  */
-class FctpSolution {
-    /**
-     * EPS limits how small a flow can be and still be treated as nonzero.
-    */
-    static final double EPS = 1e-6;
-    
-    /** The milliseconds to seconds conversion factor. */
-    private static final double MS_TO_SEC = 0.001;
-    
+class FctpSolution {    
     private double totalCost;
     private double[][] flows;
     private ArrayList<Integer> openWarehouses;
@@ -48,7 +40,7 @@ class FctpSolution {
     }
     
     public void setSolveTime(long solveTime) {
-        this.solveTime = solveTime * MS_TO_SEC;
+        this.solveTime = solveTime * Parameters.MS_TO_SEC;
     }
     
     /**
@@ -81,7 +73,7 @@ class FctpSolution {
             int warehouseIndex = openWarehouses.get(j);
             sb.append("\nWarehouse" + warehouseIndex + " is open, it serves customters: ");
             for (int k = 0; k < customerNum; k++) {
-                if (flows[warehouseIndex][k] > EPS) {
+                if (flows[warehouseIndex][k] > Parameters.EPS) {
                     sb.append(String.format("%d(%.2f) \t", k, flows[warehouseIndex][k]));
                 }
                 
