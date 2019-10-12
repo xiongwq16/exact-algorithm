@@ -77,10 +77,6 @@ class FctpMasterProblem {
         return fctpSol;
     }
     
-    IloCplex getMasterSolver() {
-        return masterSolver;
-    }
-    
     /**
      * 获取核心数量（用户 BendersCallback 定义线程数）.
      * 
@@ -88,6 +84,10 @@ class FctpMasterProblem {
      */
     int getNumCores() throws IloException {
         return masterSolver.getNumCores();
+    }
+    
+    IloCplex getMasterSolver() {
+        return masterSolver;
     }
     
     /*

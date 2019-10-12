@@ -23,39 +23,6 @@ class FctpSolution {
         flows = new double[warehouseNum][customerNum];
     }
     
-    void setOpenWarehouses(ArrayList<Integer> openWarehouses) {
-        this.openWarehouses = new ArrayList<>(openWarehouses);
-    }
-    
-    void setTotalCost(double totalCost) {
-        this.totalCost = totalCost;
-    }
-    
-    void setFlowBetween(int warehouseIndex, int customerIndex, double flow) {
-        this.flows[warehouseIndex][customerIndex] = flow;
-    }
-    
-    void setStatus(CplexStatus status) {
-        this.status = status;
-    }
-    
-    public void setSolveTime(long solveTime) {
-        this.solveTime = solveTime * Parameters.MS_TO_SEC;
-    }
-    
-    /**
-     * 最终的解由两部分构成：<br>
-     * 1 open 开设的仓库（主问题) <br>
-     * 2 flows仓库与客户的流量关系（子问题）<br>
-     * 需要主问题的解的状态来判定是否需要子问题的 flows 结果，故增加该方法。 <br>
-     * 当然也有其他的解决方案，这里不做讨论. <br>
-     * 
-     * @return 解的状态（主问题）
-     */
-    public CplexStatus getStatus() {
-        return status;
-    }
-    
     /**
      * 输出 FCTP 的解，包括解的类型，总成本，使用的仓库，供应的客户（及供应量）.
      */
@@ -81,5 +48,38 @@ class FctpSolution {
             
         }
         System.out.println(sb.toString());
+    }
+    
+    void setFlowBetween(int warehouseIndex, int customerIndex, double flow) {
+        this.flows[warehouseIndex][customerIndex] = flow;
+    }
+    
+    void setOpenWarehouses(ArrayList<Integer> openWarehouses) {
+        this.openWarehouses = new ArrayList<>(openWarehouses);
+    }
+    
+    void setTotalCost(double totalCost) {
+        this.totalCost = totalCost;
+    }
+    
+    void setStatus(CplexStatus status) {
+        this.status = status;
+    }
+    
+    public void setSolveTime(long solveTime) {
+        this.solveTime = solveTime * Parameters.MS_TO_SEC;
+    }
+    
+    /**
+     * 最终的解由两部分构成：<br>
+     * 1 open 开设的仓库（主问题) <br>
+     * 2 flows仓库与客户的流量关系（子问题）<br>
+     * 需要主问题的解的状态来判定是否需要子问题的 flows 结果，故增加该方法。 <br>
+     * 当然也有其他的解决方案，这里不做讨论. <br>
+     * 
+     * @return 解的状态（主问题）
+     */
+    public CplexStatus getStatus() {
+        return status;
     }
 }

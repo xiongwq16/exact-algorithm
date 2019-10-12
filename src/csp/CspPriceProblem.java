@@ -56,7 +56,7 @@ class CspPriceProblem {
         return pricingSolver.getValues(pattern);
     }
     
-    public double getReducedCost() {
+    double getReducedCost() {
         return reducedCost;
     }
     

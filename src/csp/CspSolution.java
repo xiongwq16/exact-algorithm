@@ -21,23 +21,19 @@ class CspSolution {
     private double[][] patterns;
 
     /**
-     * 设置木材切割的解决方案.
+     * 生成木材切割方案.
      * 
      * @param cutTimes  各切割方案的使用次数
      * @param patterns  生成的所有切割方案
      * @param rollsUsed 使用的木材数量
      */
-    void setCutPlan(double[] cutTimes, double[][] patterns, double rollsUsed) {
+    void generateCutPlan(double[] cutTimes, double[][] patterns, double rollsUsed) {
         this.cutTimes = new int[cutTimes.length];
         for (int i = 0; i < cutTimes.length; i++) {
             this.cutTimes[i] = (int) cutTimes[i];
         }
         this.patterns = patterns;
         this.rollUsed = (int) rollsUsed;
-    }
-    
-    void setStatus(CplexStatus status) {
-        this.status = status;
     }
     
     /**
@@ -53,5 +49,8 @@ class CspSolution {
             }
         }
     }
-
+    
+    void setStatus(CplexStatus status) {
+        this.status = status;
+    }
 }

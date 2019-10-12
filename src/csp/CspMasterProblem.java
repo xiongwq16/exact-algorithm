@@ -105,7 +105,7 @@ class CspMasterProblem {
 
         CspSolution cspSol = new CspSolution();
         if (rmlpSolver.solve()) {
-            cspSol.setCutPlan(rmlpSolver.getValues(cutTimes), patterns, rmlpSolver.getObjValue());
+            cspSol.generateCutPlan(rmlpSolver.getValues(cutTimes), patterns, rmlpSolver.getObjValue());
         }
         cspSol.setStatus(rmlpSolver.getCplexStatus());
 

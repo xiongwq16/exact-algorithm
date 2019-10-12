@@ -28,26 +28,6 @@ class UflpSolution {
         supply = new double[warehouseNum][customerNum];
     }
 
-    void setTotalCost(double totalCost) {
-        this.totalCost = totalCost;
-    }
-    
-    void setSupply(int warehouseIndex, int customerindex) {
-        supply[warehouseIndex][customerindex] = 1;
-    }
-
-    void setOpenWarehouses(ArrayList<Integer> openWarehouses) {
-        this.openWarehouses = openWarehouses;
-    }
-
-    void setStatus(CplexStatus status) {
-        this.status = status;
-    }
-
-    void setSolveTime(long solveTime) {
-        this.solveTime = solveTime * MS_TO_SEC;
-    }
-
     /**
      * 输出 UFLP 的解，包括解的类型，总成本，开设的仓库，客户的供应方案.
      */
@@ -71,6 +51,26 @@ class UflpSolution {
 
         }
         System.out.println(sb.toString());
+    }
+    
+    void setSupply(int warehouseIndex, int customerindex) {
+        supply[warehouseIndex][customerindex] = 1;
+    }
+    
+    void setTotalCost(double totalCost) {
+        this.totalCost = totalCost;
+    }
+
+    void setOpenWarehouses(ArrayList<Integer> openWarehouses) {
+        this.openWarehouses = openWarehouses;
+    }
+
+    void setStatus(CplexStatus status) {
+        this.status = status;
+    }
+
+    void setSolveTime(long solveTime) {
+        this.solveTime = solveTime * MS_TO_SEC;
     }
 
 }
