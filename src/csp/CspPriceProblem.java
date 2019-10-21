@@ -56,15 +56,15 @@ class CspPriceProblem {
         return pricingSolver.getValues(pattern);
     }
     
-    double getReducedCost() {
-        return reducedCost;
-    }
-    
     /**
      * Releases all Cplex objects attached to the Price Problem.
      */
     void end() {
         pricingSolver.end();
+    }
+    
+    double getReducedCost() {
+        return reducedCost;
     }
 
 }

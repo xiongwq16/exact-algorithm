@@ -3,6 +3,9 @@ package fctp;
 import fctp.Fctp;
 import fctp.FctpMasterProblem;
 import fctp.FctpSolution;
+import fctp.subproblem.FctpSubProblemDual;
+import fctp.subproblem.FctpSubProblemPrimal;
+
 import ilog.concert.IloException;
 import ilog.concert.IloNumVar;
 import ilog.concert.IloRange;
@@ -32,7 +35,18 @@ public class ManualBenders {
     /** 子问题是否采用对偶形式. */
     private boolean isSubProblemDual;
 
-    ManualBenders(boolean isSubProblemDual, int warehouseNum, int customerNum, 
+    /**
+     * Create a Instance ManualBenders.
+     * 
+     * @param isSubProblemDual 子问题是否采用对偶形式
+     * @param warehouseNum 仓库数量
+     * @param customerNum 客户数量
+     * @param meanCapMulti 生成算例所需的 mean capacity multiplier
+     * @param meanFixedCost 生成算例所需的 fixed cost of warehouse
+     * @param seed 随机种子
+     * @throws IloException
+     */
+    public ManualBenders(boolean isSubProblemDual, int warehouseNum, int customerNum, 
             double meanCapMulti, double meanFixedCost, int seed) throws IloException {
         this.isSubProblemDual = isSubProblemDual;
         
@@ -52,7 +66,7 @@ public class ManualBenders {
     /**
      * 求解 FCTP 并输出解.
      */
-    void solve() throws IloException {
+    public void solve() throws IloException {
         // 新建 BendersCallback 通用回调对象，并添加到主问题对应的求解器中
         int threadNum = masterProblem.getNumCores();
         BendersCallback callback = new BendersCallback(threadNum);
@@ -95,9 +109,9 @@ public class ManualBenders {
             if (context.inThreadUp()) {
                 System.out.printf("\n>>> subProblem %d set up.\n", threadNo);
                 if (isSubProblemDual) {
-                    subProblems[threadNo] = new FctpSubProblemDual(fctpIns, masterProblem);
+                    subProblems[threadNo] = new FctpSubProblemDual(fctpIns, masterProblem.getOpenVar());
                 } else {
-                    subProblems[threadNo] = new FctpSubProblemPrimal(fctpIns, masterProblem);
+                    subProblems[threadNo] = new FctpSubProblemPrimal(fctpIns, masterProblem.getOpenVar());
                 }
                 return;
             }
@@ -110,7 +124,7 @@ public class ManualBenders {
                 subProblems[threadNo].end();
                 return;
             }
-
+            
             // 获取当前解
             if (context.inCandidate()) {
                 // 获取主问题中的仓库开设决策变量的取值

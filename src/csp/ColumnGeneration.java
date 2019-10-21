@@ -11,14 +11,14 @@ import java.io.IOException;
  * @version V1.0
  * @since JDK1.8
  */
-class ColumnGeneration {
+public class ColumnGeneration {
     /** How small a value can be and still be treated as nonzero. */
     private static final double EPS = 1e-6;
     
     private CspMasterProblem masterProblem;
     private CspPriceProblem priceProblem;
 
-    ColumnGeneration(String filename) throws IOException, IloException {
+    public ColumnGeneration(String filename) throws IOException, IloException {
         Csp cspIns = new Csp(filename);
         
         masterProblem = new CspMasterProblem(cspIns);
@@ -28,7 +28,7 @@ class ColumnGeneration {
     /**
      * 使用列生成求解，并返回解.
      */
-    void solve() throws IloException {
+    public void solve() throws IloException {
         // 列生成核心步骤
         while (true) {
             double[] dualPrice = masterProblem.solveLp();

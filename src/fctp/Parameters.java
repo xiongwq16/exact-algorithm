@@ -8,11 +8,11 @@ package fctp;
  * @version V1.0
  * @since JDK1.8
  */
-class Parameters {
-    static final double LOADER_FACTOR = 0.75;
+public class Parameters {
+    public static final double LOADER_FACTOR = 0.75;
     
     /** The cutoff for rounding values of binary variables up. */
-    static final double ROUNDUP = 0.5;
+    public static final double ROUNDUP = 0.5;
     
     /** EPS limits how small a flow can be and still be treated as nonzero. */
     static final double EPS = 1e-6;

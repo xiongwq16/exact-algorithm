@@ -111,6 +111,13 @@ class CspMasterProblem {
 
         return cspSol;
     }
+    
+    /**
+     * Releases all Cplex objects attached to the RMLP.
+     */
+    void end() {
+        rmlpSolver.end();
+    }
 
     /**
      * 清除倍增数组导致的“空”的切割方案.
@@ -160,10 +167,4 @@ class CspMasterProblem {
         patterns = tempPat;
     }
     
-    /**
-     * Releases all Cplex objects attached to the RMLP.
-     */
-    void end() {
-        rmlpSolver.end();
-    }
 }

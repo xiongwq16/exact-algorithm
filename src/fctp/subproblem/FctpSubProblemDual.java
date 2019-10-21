@@ -1,4 +1,8 @@
-package fctp;
+package fctp.subproblem;
+
+import fctp.AbstractFctpSubProblem;
+import fctp.Fctp;
+import fctp.Parameters;
 
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
@@ -18,7 +22,7 @@ import java.util.HashMap;
  * @version V1.0
  * @since JDK1.8
  */
-class FctpSubProblemDual extends AbstractFctpSubProblem {
+public class FctpSubProblemDual extends AbstractFctpSubProblem {
     /**
      * 需求量约束的对偶变量 <br>
      * 需求量约束：for k in customers: <br>
@@ -38,7 +42,14 @@ class FctpSubProblemDual extends AbstractFctpSubProblem {
     /** 对偶问题约束，constraints[j][k] 对应的对偶变量即为原问题中的 仓库 j 供应给客户 k 的货量. */
     private IloRange[][] constraints;
     
-    FctpSubProblemDual(Fctp fctpIns, FctpMasterProblem masterProblem) throws IloException {
+    /**
+     * Create a Instance FctpSubProblemDual.
+     * 
+     * @param fctpIns FCTP 实例
+     * @param openVar 主问题中的 open 变量
+     * @throws IloException
+     */
+    public FctpSubProblemDual(Fctp fctpIns, IloNumVar[] openVar) throws IloException {
         super(fctpIns);
         
         // 创建决策变量，并保存对应的目标函数系数
@@ -62,7 +73,7 @@ class FctpSubProblemDual extends AbstractFctpSubProblem {
              * 注意这里的右侧项存放的变量 -capacity[j] * open[j]
              */
             IloLinearNumExpr expr = subSolver.linearNumExpr();
-            expr.addTerm(-capacity[j], masterProblem.getOpenVar()[j]);
+            expr.addTerm(-capacity[j], openVar[j]);
             objCoeff.put(capacityDualVars[j], expr);
         }
         
@@ -91,13 +102,13 @@ class FctpSubProblemDual extends AbstractFctpSubProblem {
     }
     
     @Override
-    double getFlowBetween(int warehouseIndex, int customerIndex) 
+    protected double getFlowBetween(int warehouseIndex, int customerIndex) 
             throws UnknownObjectException, IloException {
         return subSolver.getDual(constraints[warehouseIndex][customerIndex]);
     }
     
     @Override
-    IloCplex.Status solve(double[] openValues, double[] capacity) throws IloException {
+    protected IloCplex.Status solve(double[] openValues, double[] capacity) throws IloException {
         IloNumExpr objExpr = subSolver.numExpr();        
         // 根据仓库开设情况更新的容量
         double[] openCapacity = new double[warehouseNum];
@@ -123,7 +134,7 @@ class FctpSubProblemDual extends AbstractFctpSubProblem {
     }
     
     @Override
-    IloRange createFeasibilityCut() throws IloException {
+    protected IloRange createFeasibilityCut() throws IloException {
         IloLinearNumExpr ray = subSolver.getRay();
         IloLinearNumExprIterator it = ray.linearIterator();
         
@@ -140,7 +151,7 @@ class FctpSubProblemDual extends AbstractFctpSubProblem {
     }
 
     @Override
-    IloRange createOptimalityCut(IloNumVar estFlowCost) throws IloException {        
+    protected IloRange createOptimalityCut(IloNumVar estFlowCost) throws IloException {        
         IloNumExpr expr = subSolver.numExpr();
         
         // 需求量约束的右侧项 * 对偶变量值

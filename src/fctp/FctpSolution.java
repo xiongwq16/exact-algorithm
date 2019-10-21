@@ -26,7 +26,7 @@ class FctpSolution {
     /**
      * 输出 FCTP 的解，包括解的类型，总成本，使用的仓库，供应的客户（及供应量）.
      */
-    public void output() {
+    void output() {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("It takes %.3f seconds to find the %s solution.\n", 
                 solveTime, status));
@@ -66,7 +66,7 @@ class FctpSolution {
         this.status = status;
     }
     
-    public void setSolveTime(long solveTime) {
+    void setSolveTime(long solveTime) {
         this.solveTime = solveTime * Parameters.MS_TO_SEC;
     }
     
@@ -79,7 +79,7 @@ class FctpSolution {
      * 
      * @return 解的状态（主问题）
      */
-    public CplexStatus getStatus() {
+    CplexStatus getStatus() {
         return status;
     }
 }

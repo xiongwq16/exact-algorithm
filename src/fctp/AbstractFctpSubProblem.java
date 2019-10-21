@@ -6,13 +6,20 @@ import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
 import ilog.cplex.IloCplex.UnknownObjectException;
 
-abstract class AbstractFctpSubProblem {
-    int warehouseNum;
-    int customerNum;
+/**
+ * 子问题抽象类.
+ * 
+ * @author Xiong Wangqi
+ * @version V1.0
+ * @since JDK1.8
+ */
+public abstract class AbstractFctpSubProblem {
+    protected int warehouseNum;
+    protected int customerNum;
 
-    IloCplex subSolver;
+    protected IloCplex subSolver;
     
-    AbstractFctpSubProblem(Fctp fctpIns) throws IloException {
+    protected AbstractFctpSubProblem(Fctp fctpIns) throws IloException {
         warehouseNum = fctpIns.getWarehouseNum();
         customerNum = fctpIns.getCustomerNum();
 
@@ -28,7 +35,7 @@ abstract class AbstractFctpSubProblem {
      * @throws UnknownObjectException 索引错误异常
      * @throws IloException
      */
-    abstract double getFlowBetween(int warehouseIndex, int customerIndex) 
+    protected abstract double getFlowBetween(int warehouseIndex, int customerIndex) 
             throws UnknownObjectException, IloException;
 
     /*
@@ -51,7 +58,7 @@ abstract class AbstractFctpSubProblem {
      * @return 解的状态
      * @throws IloException
      */
-    abstract IloCplex.Status solve(double[] openValues, double[] capacity) throws IloException;
+    protected abstract IloCplex.Status solve(double[] openValues, double[] capacity) throws IloException;
     
     /**
      * 生成“可行割”.
@@ -59,7 +66,7 @@ abstract class AbstractFctpSubProblem {
      * @return 可行割
      * @throws IloException
      */
-    abstract IloRange createFeasibilityCut() throws IloException;
+    protected abstract IloRange createFeasibilityCut() throws IloException;
 
     /**
      * 生成“最优割”.
@@ -68,12 +75,12 @@ abstract class AbstractFctpSubProblem {
      * @return 最优割
      * @throws IloException
      */
-    abstract IloRange createOptimalityCut(IloNumVar estFlowCost) throws IloException;
+    protected abstract IloRange createOptimalityCut(IloNumVar estFlowCost) throws IloException;
 
     double getObjValue() throws IloException {
         return subSolver.getObjValue();
     }
-
+    
     /**
      * Releases all Cplex objects attached to the SubProblem.
      */

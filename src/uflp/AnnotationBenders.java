@@ -15,7 +15,7 @@ import java.util.ArrayList;
  * @version V1.0
  * @since JDK1.8
  */
-class AnnotationBenders {
+public class AnnotationBenders {
     private IloCplex uflpSolver;
     /** use[j] = 1 if warehouse j is used, 0 if not. */
     private IloNumVar[] open;
@@ -25,7 +25,7 @@ class AnnotationBenders {
     private int warehouseNum;
     private int customerNum;
 
-    AnnotationBenders(String filename, int randomSeed) throws IOException, IloException {
+    public AnnotationBenders(String filename, int randomSeed) throws IOException, IloException {
         Uflp uflpIns = new Uflp(filename);
         warehouseNum = uflpIns.getFalicityNum();
         customerNum = uflpIns.getCustomerNum();
@@ -70,43 +70,11 @@ class AnnotationBenders {
         this.setRandomSeed(randomSeed);
     }
 
-    /**
-     * 添加 Benders 注释 <br>
-     * 1 创建 IloCplex.LongAnnotation 注释对象 <br>
-     * 2 为变量添加注释：0 对应 MasterProblem，n > 0 对应第 n 个 SubProblem <br>
-     * 3 如果 SubProblem 不可再分解，则全部注释为 1 <br>
-     * 4 如果某个变量没有被注释，则使用创建 IloCplex.LongAnnotation 对象时的默认值 <br>
-     */
-    private void setAnnotation() throws IloException {
-        IloCplex.LongAnnotation benders = uflpSolver.newLongAnnotation(
-                IloCplex.CPX_BENDERS_ANNOTATION);
-
-        // Put the binary "open" variables in the master problem.
-        for (int j = 0; j < warehouseNum; j++) {
-            uflpSolver.setAnnotation(benders, open[j], 0);
-        }
-
-        // Attention: The LP portion can be decomposed into smaller problems
-        // So put the "supply" variables in different subproblem
-        for (int k = 0; k < customerNum; k++) {
-            for (int j = 0; j < warehouseNum; j++) {
-                uflpSolver.setAnnotation(benders, supply[j][k], k + 1);
-            }
-        }
-
-        // Benders Strategy 采用 User 策略，即完全根据用户注释进行 Benders Decomposition
-        uflpSolver.setParam(IloCplex.Param.Benders.Strategy, IloCplex.BendersStrategy.User);
-    }
-    
-    private void setRandomSeed(int randomSeed) throws IloException {
-        uflpSolver.setParam(IloCplex.Param.RandomSeed, randomSeed);
-    }
-
-    void setBendersStrategy(int strategy) throws IloException {
+    public void setBendersStrategy(int strategy) throws IloException {
         uflpSolver.setParam(IloCplex.Param.Benders.Strategy, strategy);
     }
     
-    void solve() throws IloException {
+    public void solve() throws IloException {
         UflpSolution uflpSol = new UflpSolution(warehouseNum, customerNum);
 
         long start = System.currentTimeMillis();
@@ -141,6 +109,38 @@ class AnnotationBenders {
         
         // Releases all Cplex objects attached to the Annotation Benders
         uflpSolver.end();
+    }
+    
+    /**
+     * 添加 Benders 注释 <br>
+     * 1 创建 IloCplex.LongAnnotation 注释对象 <br>
+     * 2 为变量添加注释：0 对应 MasterProblem，n > 0 对应第 n 个 SubProblem <br>
+     * 3 如果 SubProblem 不可再分解，则全部注释为 1 <br>
+     * 4 如果某个变量没有被注释，则使用创建 IloCplex.LongAnnotation 对象时的默认值 <br>
+     */
+    private void setAnnotation() throws IloException {
+        IloCplex.LongAnnotation benders = uflpSolver.newLongAnnotation(
+                IloCplex.CPX_BENDERS_ANNOTATION);
+
+        // Put the binary "open" variables in the master problem.
+        for (int j = 0; j < warehouseNum; j++) {
+            uflpSolver.setAnnotation(benders, open[j], 0);
+        }
+
+        // Attention: The LP portion can be decomposed into smaller problems
+        // So put the "supply" variables in different subproblem
+        for (int k = 0; k < customerNum; k++) {
+            for (int j = 0; j < warehouseNum; j++) {
+                uflpSolver.setAnnotation(benders, supply[j][k], k + 1);
+            }
+        }
+
+        // Benders Strategy 采用 User 策略，即完全根据用户注释进行 Benders Decomposition
+        uflpSolver.setParam(IloCplex.Param.Benders.Strategy, IloCplex.BendersStrategy.User);
+    }
+    
+    private void setRandomSeed(int randomSeed) throws IloException {
+        uflpSolver.setParam(IloCplex.Param.RandomSeed, randomSeed);
     }
     
 }
