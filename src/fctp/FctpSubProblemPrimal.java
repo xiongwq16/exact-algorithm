@@ -1,8 +1,5 @@
 package fctp;
 
-import fctp.Fctp;
-import fctp.FctpMasterProblem;
-
 import ilog.concert.IloConstraint;
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;

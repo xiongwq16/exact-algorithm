@@ -17,7 +17,7 @@ import ilog.cplex.IloCplex.UnknownObjectException;
  * @version V1.0
  * @since JDK1.8
  */
-class ManualBenders {
+public class ManualBenders {
     private Fctp fctpIns;
     private FctpMasterProblem masterProblem;
     /** 主问题中的流量成本变量. */
@@ -69,7 +69,7 @@ class ManualBenders {
             // 使用 BendersCallback 中的方法添加 flows 信息
             callback.addFlowInfo(fctpSol);
         }
-
+        
         fctpSol.output();
     }
 
@@ -134,8 +134,8 @@ class ManualBenders {
                 
                 // 原问题或对偶问题最优
                 if (status == IloCplex.Status.Optimal) {
-                    double zStar = context.getCandidatePoint(estFlowCost);
-                    if (zStar < subProblem.getObjValue() - Parameters.EPS) {
+                    double zstar = context.getCandidatePoint(estFlowCost);
+                    if (zstar < subProblem.getObjValue() - Parameters.EPS) {
                         System.out.print("\n>>> Adding optimality cut.\n");
                         // 构造最优割
                         IloRange optimalityCut = subProblem.createOptimalityCut(estFlowCost);

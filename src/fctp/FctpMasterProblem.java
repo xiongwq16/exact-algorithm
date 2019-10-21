@@ -3,7 +3,6 @@ package fctp;
 import ilog.concert.IloException;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
-import ilog.cplex.IloCplex.Param;
 
 import java.util.ArrayList;
 

@@ -137,7 +137,7 @@ class CspMasterProblem {
         if (patternNum == cutTimes.length) {
             resizing(2 * patternNum);
         }
-
+        
         cutTimes[patternNum] = cutTime;
         patterns[patternNum] = Arrays.copyOf(pattern, kinds);
 
