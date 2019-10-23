@@ -97,7 +97,7 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
 
         // Attention: add service time
         double time = currLabel.getTime() + vrptwIns.getVertexByIndex(currLabel.getVertex()).getServiceTime()
-                + vrptwIns.getDistanceBetween(currLabel.getVertex(), nextVertexIndex);
+                + vrptwIns.getTimeMatrix()[currLabel.getVertex()][nextVertexIndex];
 
         if (time > vrptwIns.getVertexByIndex(nextVertexIndex).getLatestTime()) {
             return;
