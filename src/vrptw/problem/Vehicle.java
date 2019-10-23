@@ -12,6 +12,7 @@ public class Vehicle {
     private double capacity;
     
     public Vehicle(double speed, double capacity) {
+        this.speed = speed;
         this.capacity = capacity;
     }
     

@@ -113,14 +113,6 @@ public class Vrptw {
     public double[][] getTimeMatrix() {
         return timeMatrix;
     }
-    
-    public double getDistanceBetween(int firstIndex, int secondIndex) {
-        return distMatrix[firstIndex][secondIndex];
-    }
-
-    public double getTimeBetween(int firstIndex, int secondIndex) {
-        return timeMatrix[firstIndex][secondIndex];
-    }
 
     public int getVehNum() {
         return vehNum;
