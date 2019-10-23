@@ -21,11 +21,11 @@ import vrptw.problem.Vrptw;
  */
 public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorithm {
     /** 待处理的节点队列. */
-    private Queue<Integer> nodesToTreat;
-    /** Set of labels extended from node chosen to its successors. */
+    private Queue<Integer> vertexeToTreat;
+    /** Set of labels extended from vertex chosen to its successors. */
     private ArrayList<EsppcctwLabel> labelExtendedFromCurrToNext;
 
-    /** labels on every node，外层索引对应节点索引. */
+    /** labels on every vertex，外层索引对应节点索引. */
     ArrayList<ArrayList<AbstractLabel>> labelList;
 
     /**
@@ -37,21 +37,21 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
     public EspptwccViaLabel(Vrptw vrptwIns, double[] lambda) {
         super(vrptwIns, lambda);
 
-        int initialCapcity = (int) (nodeNum / Parameters.LOADER_FACTOR) + 1;
+        int initialCapcity = (int) (vertexNum / Parameters.LOADER_FACTOR) + 1;
         labelList = new ArrayList<>(initialCapcity);
-        for (int i = 0; i < nodeNum; i++) {
+        for (int i = 0; i < vertexNum; i++) {
             labelList.add(new ArrayList<>(Parameters.INITIAL_CAPACITY));
         }
 
-        nodesToTreat = new LinkedList<>();
+        vertexeToTreat = new LinkedList<>();
     }
 
     /**
      * Solve an ESPPTWCC via dynamic programming labeling approach: <br>
      * Step 0: Initialization <br>
-     * Step 1: Selection of the node to be treated <br>
-     * Step 2: Exploration of the successor of the current node <br>
-     * Step 3: add non-dominated labels to labelList add update nodesToTreat <br>
+     * Step 1: Selection of the vertex to be treated <br>
+     * Step 2: Exploration of the successor of the current vertex <br>
+     * Step 3: add non-dominated labels to labelList add update vertexToTreat <br>
      * Step 4: Filtering.
      */
     @Override
@@ -59,25 +59,25 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
         // Step 0: Initialization
         EsppcctwLabel initialLabel = new EsppcctwLabel(0, 0, 0, 0);
         labelList.get(0).add(initialLabel);
-        nodesToTreat.offer(0);
+        vertexeToTreat.offer(0);
 
-        while (!nodesToTreat.isEmpty()) {
-            // Step 1: Selection of the node to be treated, I choose FIFO rules
-            int currNode = nodesToTreat.poll();
+        while (!vertexeToTreat.isEmpty()) {
+            // Step 1: Selection of the vertex to be treated, I choose FIFO rules
+            int currVertexIndex = vertexeToTreat.poll();
 
-            for (int j = 0; j < nodeNum; j++) {
-                // Step 2: Exploration of the successor of the current node
+            for (int j = 0; j < vertexNum; j++) {
+                // Step 2: Exploration of the successor of the current vertex
 
-                // Clear the set of labels extended from node chosen to its successors
+                // Clear the set of labels extended from vertex chosen to its successors
                 labelExtendedFromCurrToNext = new ArrayList<>(Parameters.INITIAL_CAPACITY);
 
-                // for all labels on node i
-                for (AbstractLabel label : labelList.get(currNode)) {
-                    // Extend to the reachable nodes
+                // for all labels on vertex i
+                for (AbstractLabel label : labelList.get(currVertexIndex)) {
+                    // Extend to the reachable vertexes
                     this.labelExtension(label, j);
                 }
 
-                // Step 3: add non-dominated labels to labelList add update nodesToTreat
+                // Step 3: add non-dominated labels to labelList add update vertexToTreat
                 for (EsppcctwLabel labelExtended : labelExtendedFromCurrToNext) {
                     this.useDominanceRules(labelExtended);
                 }
@@ -87,39 +87,39 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
         }
 
         // Step 4: Filtering
-        AbstractLabel optLabel = this.filtering(labelList.get(nodeNum - 1));
+        AbstractLabel optLabel = this.filtering(labelList.get(vertexNum - 1));
 
         // 设置最短路径信息
         this.reducedCost = optLabel.getCost();
-        ArrayList<Integer> nodeIndices = this.labelToVisitNodes(optLabel);
-        this.shortestPath = this.createPath(nodeIndices);
+        ArrayList<Integer> vertexIndices = this.labelToVisitVertexes(optLabel);
+        this.shortestPath = this.createPath(vertexIndices);
     }
 
     @Override
-    public void labelExtension(AbstractLabel currLabel, int nextNodeIndex) {
+    public void labelExtension(AbstractLabel currLabel, int nextVertexIndex) {
         if (!(currLabel instanceof EsppcctwLabel)) {
             throw new IllegalArgumentException("输入标签类型错误，请校验！");
         }
 
-        // Extend to the reachable nodes
+        // Extend to the reachable vertexes
         EsppcctwLabel currentLabel = (EsppcctwLabel) currLabel;
-        if (currentLabel.unreachableArray[nextNodeIndex] == 1) {
+        if (currentLabel.unreachableArray[nextVertexIndex] == 1) {
             return;
         }
-
+        
         // whether the extension is feasible
-        double demand = currentLabel.getDemand() + vrptwIns.getNodeByIndex(nextNodeIndex).getDemand();
+        double demand = currentLabel.getDemand() + vrptwIns.getVertexByIndex(nextVertexIndex).getDemand();
 
         // Attention: add service time
-        double time = currentLabel.getTime() + vrptwIns.getNodeByIndex(currentLabel.getNode()).getServiceTime()
-                + vrptwIns.getDistanceBetween(currentLabel.getNode(), nextNodeIndex);
-
-        if (time < vrptwIns.getNodeByIndex(nextNodeIndex).getEarliestTime()) {
-            time = vrptwIns.getNodeByIndex(nextNodeIndex).getEarliestTime();
+        double time = currentLabel.getTime() + vrptwIns.getVertexByIndex(currentLabel.getVertex()).getServiceTime()
+                + vrptwIns.getTimeMatrix()[currentLabel.getVertex()][nextVertexIndex];
+        
+        if (time < vrptwIns.getVertexByIndex(nextVertexIndex).getEarliestTime()) {
+            time = vrptwIns.getVertexByIndex(nextVertexIndex).getEarliestTime();
         }
 
-        double cost = currentLabel.getCost() + revisedCostMatrix[currentLabel.getNode()][nextNodeIndex];
-        EsppcctwLabel labelExtended = new EsppcctwLabel(cost, time, demand, nextNodeIndex, currentLabel);
+        double cost = currentLabel.getCost() + revisedCostMatrix[currentLabel.getVertex()][nextVertexIndex];
+        EsppcctwLabel labelExtended = new EsppcctwLabel(cost, time, demand, nextVertexIndex, currentLabel);
 
         this.labelExtendedFromCurrToNext.add(labelExtended);
     }
@@ -131,10 +131,10 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
             throw new IllegalArgumentException("输入标签类型错误，请校验！");
         }
 
-        int currNodeIndex = labelToCompare.getNode();
-        ArrayList<AbstractLabel> labels = labelList.get(currNodeIndex);
+        int currVertexIndex = labelToCompare.getVertex();
+        ArrayList<AbstractLabel> labels = labelList.get(currVertexIndex);
 
-        // Is the labels on current node changed?
+        // Is the labels on current vertex changed?
         boolean isLabelsChanged = false;
 
         // whether the new label dominates or dominated by other labels
@@ -182,9 +182,9 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
             isLabelsChanged = true;
         }
 
-        // Is current node not in nodesToTreat? Is the labels on current node j changed?
-        if (!nodesToTreat.contains(currNodeIndex) && isLabelsChanged) {
-            nodesToTreat.offer(currNodeIndex);
+        // Is current vertex not in vertexToTreat? Is the labels on current vertex j changed?
+        if (!vertexeToTreat.contains(currVertexIndex) && isLabelsChanged) {
+            vertexeToTreat.offer(currVertexIndex);
         }
 
     }
@@ -202,20 +202,20 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
         /** 不可达的节点对应 1，可达对应 0. */
         int[] unreachableArray;
         /** 不可达（资源约束不满足）的节点的数量，标签对应路径访问过的节点也不可达. */
-        private int unreachablenNodeNum;
+        private int unreachablenVertexNum;
 
-        EsppcctwLabel(double cost, double time, double demand, int node) {
-            super(cost, time, demand, node, null);
+        EsppcctwLabel(double cost, double time, double demand, int vertexIndex) {
+            super(cost, time, demand, vertexIndex, null);
 
             // int 默认值为 0
-            unreachableArray = new int[nodeNum];
-            unreachablenNodeNum = 0;
+            unreachableArray = new int[vertexNum];
+            unreachablenVertexNum = 0;
 
-            this.updateUnreachableNodes();
+            this.updateUnreachableVertexes();
         }
 
-        EsppcctwLabel(double cost, double time, double demand, int node, AbstractLabel preLabel) {
-            super(cost, time, demand, node, preLabel);
+        EsppcctwLabel(double cost, double time, double demand, int vertexIndex, AbstractLabel preLabel) {
+            super(cost, time, demand, vertexIndex, preLabel);
 
             if (!(this.getPreLabel() instanceof EsppcctwLabel)) {
                 throw new IllegalArgumentException("上一个标签类型错误，请校验！");
@@ -225,13 +225,13 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
 
             // 需求量，时间都是 non-decreasing，并且访问过的节点不能再访问
             // 所以上一个标签不可达节点在当前标签中必然不可达
-            this.unreachableArray = new int[nodeNum];
-            for (int j = 0; j < nodeNum; j++) {
+            this.unreachableArray = new int[vertexNum];
+            for (int j = 0; j < vertexNum; j++) {
                 this.unreachableArray[j] = label.unreachableArray[j];
             }
-            this.unreachablenNodeNum = label.unreachablenNodeNum;
+            this.unreachablenVertexNum = label.unreachablenVertexNum;
 
-            this.updateUnreachableNodes();
+            this.updateUnreachableVertexes();
         }
 
         /**
@@ -259,12 +259,12 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
             }
 
             // 如果 newOther 访问过的节点的数量如果少于 this ，则 this 没有被“优超”
-            if (newOther.unreachablenNodeNum > this.unreachablenNodeNum) {
+            if (newOther.unreachablenVertexNum > this.unreachablenVertexNum) {
                 return false;
             }
 
             // 如果存在 this 访问过，但 newOther 没有访问过的节点，则 this 没有被“优超”
-            for (int i = 0; i < nodeNum; i++) {
+            for (int i = 0; i < vertexNum; i++) {
                 if (newOther.unreachableArray[i] > this.unreachableArray[i]) {
                     return false;
                 }
@@ -273,31 +273,31 @@ public class EspptwccViaLabel extends AbstractSubProblem implements LabelAlgorit
             return true;
         }
 
-        private void updateUnreachableNodes() {
+        private void updateUnreachableVertexes() {
             // 当前节点本身不再可达
-            unreachableArray[this.getNode()] = 1;
-            unreachablenNodeNum++;
+            unreachableArray[this.getVertex()] = 1;
+            unreachablenVertexNum++;
 
-            // Are preLabel's reachable nodes still reachable for current node?
-            for (int j = 0; j < nodeNum; j++) {
+            // Are preLabel's reachable vertexes still reachable for current vertex?
+            for (int j = 0; j < vertexNum; j++) {
                 if (unreachableArray[j] == 1) {
                     continue;
                 }
 
                 // check capacity constraints
-                double newDemand = this.getDemand() + vrptwIns.getNodeByIndex(j).getDemand();
+                double newDemand = this.getDemand() + vrptwIns.getVertexByIndex(j).getDemand();
                 if (newDemand > vrptwIns.getVehicle().getCapacity()) {
                     unreachableArray[j] = 1;
-                    unreachablenNodeNum++;
+                    unreachablenVertexNum++;
                     continue;
                 }
 
                 // check time window constraints
-                double newTime = this.getTime() + vrptwIns.getNodeByIndex(this.getNode()).getServiceTime()
-                        + vrptwIns.getDistanceBetween(this.getNode(), j);
-                if (newTime > vrptwIns.getNodeByIndex(j).getLatestTime()) {
+                double newTime = this.getTime() + vrptwIns.getVertexByIndex(this.getVertex()).getServiceTime()
+                        + vrptwIns.getTimeMatrix()[this.getVertex()][j];
+                if (newTime > vrptwIns.getVertexByIndex(j).getLatestTime()) {
                     unreachableArray[j] = 1;
-                    unreachablenNodeNum++;
+                    unreachablenVertexNum++;
                 }
 
             }

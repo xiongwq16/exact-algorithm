@@ -13,13 +13,13 @@ import vrptw.solution.Path;
  * @since JDK1.8
  */
 abstract public class AbstractSubProblem {
-    protected final int nodeNum;
+    protected final int vertexNum;
     protected final Vrptw vrptwIns;
-
+    
     protected final double[][] revisedCostMatrix;
     
     protected Path shortestPath;
-    /** 路径对应的 reduced cost. */
+    /** 最短路径对应的 reduced cost. */
     protected double reducedCost;
     
     /**
@@ -30,31 +30,31 @@ abstract public class AbstractSubProblem {
      */
     public AbstractSubProblem(Vrptw vrptwIns, double[] lambda) {
         // startDepot and endDepot has no lambda
-        if (lambda.length != vrptwIns.getNodeNum() - 2) {
+        if (lambda.length != vrptwIns.getVertexNum() - 2) {
             throw new IllegalArgumentException(
-                    String.format("The lenght of lambda should be %d", vrptwIns.getNodeNum() - 2));
+                    String.format("The lenght of lambda should be %d", vrptwIns.getVertexNum() - 2));
         }
 
         this.vrptwIns = vrptwIns;
 
-        nodeNum = vrptwIns.getNodeNum();
-        revisedCostMatrix = new double[nodeNum][nodeNum];
+        vertexNum = vrptwIns.getVertexNum();
+        revisedCostMatrix = new double[vertexNum][vertexNum];
         // startDepot and endDepot(dummy)
-        for (int j = 0; j < nodeNum; j++) {
-            revisedCostMatrix[0][j] = vrptwIns.getDistanceBetween(0, j);
-            revisedCostMatrix[j][nodeNum - 1] = vrptwIns.getDistanceBetween(j, nodeNum - 1);
+        for (int j = 0; j < vertexNum; j++) {
+            revisedCostMatrix[0][j] = vrptwIns.getDistMatrix()[0][j];
+            revisedCostMatrix[j][vertexNum - 1] = vrptwIns.getDistMatrix()[j][vertexNum - 1];
         }
-
+        
         // customers
-        for (int i = 1; i < nodeNum - 1; i++) {
-            for (int j = 0; j < nodeNum; j++) {
-                revisedCostMatrix[i][j] = vrptwIns.getDistanceBetween(i, j) - lambda[i - 1];
+        for (int i = 1; i < vertexNum - 1; i++) {
+            for (int j = 0; j < vertexNum; j++) {
+                revisedCostMatrix[i][j] = vrptwIns.getDistMatrix()[i][j] - lambda[i - 1];
             }
 
         }
 
     }
-
+    
     /**
      * 求解子问题.
      */
@@ -63,16 +63,16 @@ abstract public class AbstractSubProblem {
     /**
      * 基于节点访问序列，reduced cost 生成路径.
      * 
-     * @param nodeIndices 节点访问序列（包括 startDepot 和 endDepot）
+     * @param vertexIndices 节点访问序列（包括 startDepot 和 endDepot）
      * @return 给定节点访问序列对应的路径
      */
-    protected Path createPath(ArrayList<Integer> nodeIndices) {
+    protected Path createPath(ArrayList<Integer> vertexIndices) {
         double cost = 0;
-        for (int i = 0; i < nodeIndices.size() - 1; i++) {
-            cost += vrptwIns.getDistanceBetween(nodeIndices.get(i), nodeIndices.get(i + 1));
+        for (int i = 0; i < vertexIndices.size() - 1; i++) {
+            cost += vrptwIns.getDistMatrix()[vertexIndices.get(i)][vertexIndices.get(i + 1)];
         }
         
-        return new Path(nodeIndices, cost, vrptwIns.getNodeNum());
+        return new Path(vertexIndices, cost, vrptwIns.getVertexNum());
     }
     
     public Path getShortestPath() {

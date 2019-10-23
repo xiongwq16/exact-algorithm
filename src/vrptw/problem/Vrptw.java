@@ -16,10 +16,10 @@ import vrptw.parameter.Parameters;
  * @since JDK1.8
  */
 public class Vrptw {
-    private int nodeNum;
+    private int vertexNum;
     /** 存放节点及其对应的序号，Key 为 0 代表配送中心，其他代表客户. */
-    private Map<Integer, Node> nodes;
-
+    private Map<Integer, Vertex> vertexes;
+    
     private int vehNum;
     private Vehicle vehicle;
 
@@ -31,7 +31,7 @@ public class Vrptw {
     public Vrptw(String filename) throws IOException {
         BufferedReader bfr = new BufferedReader(new FileReader(filename));
 
-        nodes = new LinkedHashMap<>(Parameters.INITIAL_CAPACITY);
+        vertexes = new LinkedHashMap<>(Parameters.INITIAL_CAPACITY);
 
         String line = null;
         int count = 0;
@@ -61,42 +61,42 @@ public class Vrptw {
                 double latestTime = Double.parseDouble(str[5]);
                 double serviceTime = Double.parseDouble(str[6]);
 
-                Node node = new Node(index, id, xcoor, ycoor, demand, serviceTime, earliestTime, latestTime);
-                nodes.put(index, node);
+                Vertex vertex = new Vertex(index, id, xcoor, ycoor, demand, serviceTime, earliestTime, latestTime);
+                vertexes.put(index, vertex);
             }
 
         }
 
         // add dummy end depot
-        Node depot = nodes.get(0);
-        nodes.put(nodes.size(), depot);
+        Vertex depot = vertexes.get(0);
+        vertexes.put(vertexes.size(), depot);
 
-        nodeNum = nodes.size();
+        vertexNum = vertexes.size();
 
-        distMatrix = new double[nodeNum][nodeNum];
-        timeMatrix = new double[nodeNum][nodeNum];
+        distMatrix = new double[vertexNum][vertexNum];
+        timeMatrix = new double[vertexNum][vertexNum];
         setDistAndTimeMatrix();
 
         bfr.close();
     }
 
-    public Node getNodeByIndex(int index) {
-        return nodes.get(index);
+    public Vertex getVertexByIndex(int index) {
+        return vertexes.get(index);
     }
 
     private void setDistAndTimeMatrix() {
-        for (Map.Entry<Integer, Node> first : nodes.entrySet()) {
+        for (Map.Entry<Integer, Vertex> first : vertexes.entrySet()) {
             int index1 = first.getKey();
-            Node node1 = first.getValue();
+            Vertex vertex1 = first.getValue();
 
-            for (Map.Entry<Integer, Node> second : nodes.entrySet()) {
+            for (Map.Entry<Integer, Vertex> second : vertexes.entrySet()) {
                 int index2 = second.getKey();
-                Node node2 = second.getValue();
+                Vertex vertex2 = second.getValue();
 
-                if (index1 == nodeNum - 1 || index2 == 0) {
+                if (index1 == vertexNum - 1 || index2 == 0) {
                     distMatrix[index1][index2] = Double.MAX_VALUE;
                 } else {
-                    distMatrix[index1][index2] = node1.getDistanceTo(node2);
+                    distMatrix[index1][index2] = vertex1.getDistanceTo(vertex2);
                 }
 
                 timeMatrix[index1][index2] = distMatrix[index1][index2] / vehicle.getSpeed();
@@ -105,7 +105,15 @@ public class Vrptw {
         }
 
     }
-
+    
+    public double[][] getDistMatrix() {
+        return distMatrix;
+    }
+    
+    public double[][] getTimeMatrix() {
+        return timeMatrix;
+    }
+    
     public double getDistanceBetween(int firstIndex, int secondIndex) {
         return distMatrix[firstIndex][secondIndex];
     }
@@ -122,7 +130,7 @@ public class Vrptw {
         return vehicle;
     }
 
-    public int getNodeNum() {
-        return nodeNum;
+    public int getVertexNum() {
+        return vertexNum;
     }
 }

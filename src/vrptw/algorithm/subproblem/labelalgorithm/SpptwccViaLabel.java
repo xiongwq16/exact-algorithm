@@ -22,7 +22,7 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
     /** 待处理的 Labels，采用基于 lexicographically minimal 的优先队列. */
     private PriorityQueue<SppcctwLabel> unprocessedLabels;
     
-    /** labels on every node，外层索引对应节点索引. */
+    /** labels on every vertex，外层索引对应节点索引. */
     ArrayList<ArrayList<AbstractLabel>> labelList;
 
     /**
@@ -34,11 +34,11 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
     public SpptwccViaLabel(Vrptw vrptwIns, double[] lambda) {
         super(vrptwIns, lambda);
 
-        int initialCapcity = (int) (nodeNum / Parameters.LOADER_FACTOR) + 1;
+        int initialCapcity = (int) (vertexNum / Parameters.LOADER_FACTOR) + 1;
         unprocessedLabels = new PriorityQueue<>(initialCapcity, new LabelComparator());
 
         labelList = new ArrayList<>(initialCapcity);
-        for (int i = 0; i < nodeNum; i++) {
+        for (int i = 0; i < vertexNum; i++) {
             labelList.add(new ArrayList<>(Parameters.INITIAL_CAPACITY));
         }
     }
@@ -64,51 +64,51 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
             SppcctwLabel currlabel = unprocessedLabels.poll();
 
             // Step 2&3: Extension and Dominance
-            for (int i = 0; i < nodeNum; i++) {
-                // all nodes
+            for (int i = 0; i < vertexNum; i++) {
+                // all vertexes
                 this.labelExtension(currlabel, i);
             }
 
         }
 
         // Step 4: Filtering
-        AbstractLabel optLabel = this.filtering(labelList.get(nodeNum - 1));
+        AbstractLabel optLabel = this.filtering(labelList.get(vertexNum - 1));
         
         this.reducedCost = optLabel.getCost();
-        ArrayList<Integer> nodeIndices = this.labelToVisitNodes(optLabel);
-        this.shortestPath = this.createPath(nodeIndices);
+        ArrayList<Integer> vertexIndices = this.labelToVisitVertexes(optLabel);
+        this.shortestPath = this.createPath(vertexIndices);
     }
 
     @Override
-    public void labelExtension(AbstractLabel currLabel, int nextNodeIndex) {
+    public void labelExtension(AbstractLabel currLabel, int nextVertexIndex) {
         if (!(currLabel instanceof SppcctwLabel)) {
             throw new IllegalArgumentException("输入参数类型异常，请校验！");
         }
 
-        if (nextNodeIndex == currLabel.getNode()) {
+        if (nextVertexIndex == currLabel.getVertex()) {
             return;
         }
 
         // whether the extension is feasible
-        double demand = currLabel.getDemand() + vrptwIns.getNodeByIndex(nextNodeIndex).getDemand();
+        double demand = currLabel.getDemand() + vrptwIns.getVertexByIndex(nextVertexIndex).getDemand();
         if (demand > vrptwIns.getVehicle().getCapacity()) {
             return;
         }
 
         // Attention: add service time
-        double time = currLabel.getTime() + vrptwIns.getNodeByIndex(currLabel.getNode()).getServiceTime()
-                + vrptwIns.getDistanceBetween(currLabel.getNode(), nextNodeIndex);
+        double time = currLabel.getTime() + vrptwIns.getVertexByIndex(currLabel.getVertex()).getServiceTime()
+                + vrptwIns.getDistanceBetween(currLabel.getVertex(), nextVertexIndex);
 
-        if (time > vrptwIns.getNodeByIndex(nextNodeIndex).getLatestTime()) {
+        if (time > vrptwIns.getVertexByIndex(nextVertexIndex).getLatestTime()) {
             return;
         }
 
-        if (time < vrptwIns.getNodeByIndex(nextNodeIndex).getEarliestTime()) {
-            time = vrptwIns.getNodeByIndex(nextNodeIndex).getEarliestTime();
+        if (time < vrptwIns.getVertexByIndex(nextVertexIndex).getEarliestTime()) {
+            time = vrptwIns.getVertexByIndex(nextVertexIndex).getEarliestTime();
         }
 
-        double cost = currLabel.getCost() + revisedCostMatrix[currLabel.getNode()][nextNodeIndex];
-        SppcctwLabel newLabel = new SppcctwLabel(cost, time, demand, nextNodeIndex, currLabel);
+        double cost = currLabel.getCost() + revisedCostMatrix[currLabel.getVertex()][nextVertexIndex];
+        SppcctwLabel newLabel = new SppcctwLabel(cost, time, demand, nextVertexIndex, currLabel);
 
         this.useDominanceRules(newLabel);
     }
@@ -119,8 +119,8 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
             throw new IllegalArgumentException("输入参数类型异常，请校验！");
         }
 
-        int currNodeIndex = labelToCompare.getNode();
-        ArrayList<AbstractLabel> processedLabels = labelList.get(currNodeIndex);
+        int currVertexIndex = labelToCompare.getVertex();
+        ArrayList<AbstractLabel> processedLabels = labelList.get(currVertexIndex);
 
         // whether the new label dominates or dominated by other labels
         boolean isDominated = false;
@@ -147,7 +147,7 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
                 unprocessedLabels.remove(other);
                 iterator.remove();
             }
-
+            
             if (isPossibleDominatedByNextLabel && labelToCompare.isDominatedBy(other)) {
                 isDominated = true;
                 /*
@@ -167,7 +167,7 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
             processedLabels.add(labelToCompare);
 
             // 对于已经到达终点的 Label 不用再进行 extension
-            if (currNodeIndex != nodeNum - 1) {
+            if (currVertexIndex != vertexNum - 1) {
                 unprocessedLabels.offer((SppcctwLabel) labelToCompare);
             }
 
@@ -176,12 +176,12 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
     }
 
     private class SppcctwLabel extends AbstractLabel {
-        SppcctwLabel(double cost, double time, double demand, int node) {
-            super(cost, time, demand, node, null);
+        SppcctwLabel(double cost, double time, double demand, int vertexIndex) {
+            super(cost, time, demand, vertexIndex, null);
         }
 
-        SppcctwLabel(double cost, double time, double demand, int node, AbstractLabel preLabel) {
-            super(cost, time, demand, node, preLabel);
+        SppcctwLabel(double cost, double time, double demand, int vertexIndex, AbstractLabel preLabel) {
+            super(cost, time, demand, vertexIndex, preLabel);
 
             if (!(preLabel instanceof SppcctwLabel)) {
                 throw new IllegalArgumentException("输入标签类型错误，请校验！");
@@ -200,7 +200,7 @@ public class SpptwccViaLabel extends AbstractSubProblem implements LabelAlgorith
         @Override
         boolean isDominatedBy(AbstractLabel other) {
             // 结束点相同的 Label 才具有可比性
-            if (other.getNode() != this.getNode()) {
+            if (other.getVertex() != this.getVertex()) {
                 return false;
             }
             // 比较成本、耗时、需求总量，只要 other 有一项大于 this，则 this 没有被“优超”

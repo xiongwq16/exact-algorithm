@@ -15,15 +15,15 @@ abstract class AbstractLabel {
     /** 当前路径上所有客户的总需求量. */
     private double demand;
     /** 标签所在节点（路径上的最后一个节点）. */
-    private int node;
+    private int vertex;
     /** 上一个 label. */
     private AbstractLabel preLabel;
-
-    AbstractLabel(double cost, double time, double demand, int node, AbstractLabel preLabel) {
+    
+    AbstractLabel(double cost, double time, double demand, int vertex, AbstractLabel preLabel) {
         this.cost = cost;
         this.time = time;
         this.demand = demand;
-        this.node = node;
+        this.vertex = vertex;
         this.preLabel = preLabel;
     }
 
@@ -47,8 +47,8 @@ abstract class AbstractLabel {
         return demand;
     }
 
-    int getNode() {
-        return node;
+    int getVertex() {
+        return vertex;
     }
 
     AbstractLabel getPreLabel() {

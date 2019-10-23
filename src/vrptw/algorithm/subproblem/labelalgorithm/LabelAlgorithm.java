@@ -17,9 +17,9 @@ interface LabelAlgorithm {
      * 对选中的 Label 进行扩展（需要满足时间窗、容量约束）.
      * 
      * @param currLabel     待扩展的标签
-     * @param nextNodeIndex 待添加到标签中的节点
+     * @param nextVertexIndex 待添加到标签中的节点
      */
-    void labelExtension(AbstractLabel currLabel, int nextNodeIndex);
+    void labelExtension(AbstractLabel currLabel, int nextVertexIndex);
 
     /**
      * 根据优超准则添加判断是否添加“优超”的新标签，删除已存在但被“优超”的 Label.
@@ -44,23 +44,23 @@ interface LabelAlgorithm {
 
         return allFinalLabels.get(0);
     }
-
+    
     /**
      * 将标签转换为节点访问序列.
      * 
      * @param label 给定的标签
      * @return 标签对应的路径
      */
-    default ArrayList<Integer> labelToVisitNodes(AbstractLabel label) {
-        ArrayList<Integer> nodeIndices = new ArrayList<>(Parameters.INITIAL_CAPACITY);
-        nodeIndices.add(label.getNode());
+    default ArrayList<Integer> labelToVisitVertexes(AbstractLabel label) {
+        ArrayList<Integer> vertexIndices = new ArrayList<>(Parameters.INITIAL_CAPACITY);
+        vertexIndices.add(label.getVertex());
 
         while ((label = label.getPreLabel()) != null) {
-            nodeIndices.add(label.getNode());
+            vertexIndices.add(label.getVertex());
         }
 
-        Collections.reverse(nodeIndices);
+        Collections.reverse(vertexIndices);
 
-        return nodeIndices;
+        return vertexIndices;
     }
 }

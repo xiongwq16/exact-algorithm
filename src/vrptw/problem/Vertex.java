@@ -7,7 +7,7 @@ package vrptw.problem;
  * @version V1.0
  * @since JDK1.8
  */
-public class Node {
+public class Vertex {
     /** 节点索引号，方便设计算法. */
     private int index;
     
@@ -32,7 +32,7 @@ public class Node {
         }
     }
     
-    Node(int index, String id, double x, double y, double demand, 
+    Vertex(int index, String id, double x, double y, double demand, 
             double serviceTime, double earliestTime, double latestTime) {
         this.index = index;
         this.id = id;
@@ -43,7 +43,7 @@ public class Node {
         timeWindow = new TimeWindow(earliestTime, latestTime);
     }
     
-    Node(Node v) {
+    Vertex(Vertex v) {
         this.index = v.index;
         this.id = v.id;
         this.x = v.x;
@@ -53,7 +53,7 @@ public class Node {
         this.timeWindow = new TimeWindow(v.timeWindow.earliestTime, v.timeWindow.latestTime);
     }
     
-    double getDistanceTo(Node v) {
+    double getDistanceTo(Vertex v) {
         int distToRound = (int)(10 * Math.sqrt((this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y)));
         return distToRound / 10.0;
     }
