@@ -3,8 +3,8 @@ package vrptw.problem;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import vrptw.parameter.Parameters;
 
@@ -16,9 +16,10 @@ import vrptw.parameter.Parameters;
  * @since JDK1.8
  */
 public class Vrptw {
+    private int cusNum;
     private int vertexNum;
-    /** 存放节点及其对应的序号，Key 为 0 代表配送中心，其他代表客户. */
-    private Map<Integer, Vertex> vertexes;
+    /** 存放节点及其对应的序号，Key 为 0 和 n + 1 代表配送中心，其他代表客户. */
+    private ArrayList<Vertex> vertexes;
     
     private int vehNum;
     private Vehicle vehicle;
@@ -27,12 +28,18 @@ public class Vrptw {
     private double[][] distMatrix;
     /** 时间矩阵，索引顺序从配送中心到客户. */
     private double[][] timeMatrix;
-
+    
+    /**
+     * Create a Instance Vrptw.
+     * 
+     * @param filename Solomon 算例文件名
+     * @throws IOException
+     */
     public Vrptw(String filename) throws IOException {
         BufferedReader bfr = new BufferedReader(new FileReader(filename));
-
-        vertexes = new LinkedHashMap<>(Parameters.INITIAL_CAPACITY);
-
+        
+        vertexes = new ArrayList<>(Parameters.INITIAL_CAPACITY);
+        
         String line = null;
         int count = 0;
         while ((line = bfr.readLine()) != null) {
@@ -51,9 +58,9 @@ public class Vrptw {
             }
 
             if (count >= 10) {
-                int index = count - 10;
+                int id = count - 10;
                 String[] str = line.trim().split("\\s+");
-                String id = str[0];
+                String number = str[0];
                 double xcoor = Double.parseDouble(str[1]);
                 double ycoor = Double.parseDouble(str[2]);
                 double demand = Double.parseDouble(str[3]);
@@ -61,49 +68,49 @@ public class Vrptw {
                 double latestTime = Double.parseDouble(str[5]);
                 double serviceTime = Double.parseDouble(str[6]);
 
-                Vertex vertex = new Vertex(index, id, xcoor, ycoor, demand, serviceTime, earliestTime, latestTime);
-                vertexes.put(index, vertex);
+                Vertex vertex = new Vertex(id, number, xcoor, ycoor, demand, serviceTime, earliestTime, latestTime);
+                vertexes.add(vertex);
             }
 
         }
-
+        cusNum = vertexes.size() - 1;
+        
         // add dummy end depot
         Vertex depot = vertexes.get(0);
-        vertexes.put(vertexes.size(), depot);
+        vertexes.add(depot);
 
         vertexNum = vertexes.size();
 
         distMatrix = new double[vertexNum][vertexNum];
         timeMatrix = new double[vertexNum][vertexNum];
         setDistAndTimeMatrix();
-
+        
         bfr.close();
     }
-
-    public Vertex getVertexByIndex(int index) {
-        return vertexes.get(index);
-    }
-
+    
     private void setDistAndTimeMatrix() {
-        for (Map.Entry<Integer, Vertex> first : vertexes.entrySet()) {
-            int index1 = first.getKey();
-            Vertex vertex1 = first.getValue();
-
-            for (Map.Entry<Integer, Vertex> second : vertexes.entrySet()) {
-                int index2 = second.getKey();
-                Vertex vertex2 = second.getValue();
-
-                if (index1 == vertexNum - 1 || index2 == 0) {
-                    distMatrix[index1][index2] = Double.MAX_VALUE;
+        for (int i = 0; i < vertexNum; i++) {
+            Vertex v1 = vertexes.get(i);
+            for (int j = 0; j < vertexNum; j++) {
+                Vertex v2 = vertexes.get(j);
+                if (i == vertexNum - 1 || j == 0) {
+                    distMatrix[i][j] = Double.MAX_VALUE;
                 } else {
-                    distMatrix[index1][index2] = vertex1.getDistanceTo(vertex2);
+                    distMatrix[i][j] = v1.getDistanceTo(v2);
                 }
-
-                timeMatrix[index1][index2] = distMatrix[index1][index2] / vehicle.getSpeed();
+                
+                timeMatrix[i][j] = distMatrix[i][j] / vehicle.getSpeed();
             }
-
         }
-
+                
+    }
+    
+    public ArrayList<Vertex> getVertexes() {
+        return vertexes;
+    }
+    
+    public List<Vertex> getCustomers() {
+        return vertexes.subList(1, vertexNum - 1);
     }
     
     public double[][] getDistMatrix() {
@@ -113,7 +120,15 @@ public class Vrptw {
     public double[][] getTimeMatrix() {
         return timeMatrix;
     }
-
+    
+    public int getCusNum() {
+        return cusNum;
+    }
+    
+    public int getVertexNum() {
+        return vertexNum;
+    }
+    
     public int getVehNum() {
         return vehNum;
     }
@@ -121,8 +136,5 @@ public class Vrptw {
     public Vehicle getVehicle() {
         return vehicle;
     }
-
-    public int getVertexNum() {
-        return vertexNum;
-    }
+    
 }

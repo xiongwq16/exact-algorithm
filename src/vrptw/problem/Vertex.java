@@ -8,12 +8,11 @@ package vrptw.problem;
  * @since JDK1.8
  */
 public class Vertex {
-    /** 节点索引号，方便设计算法. */
-    private int index;
+    /** 节点 id，方便设计算法. */
+    private int id;
     
-    /** 算例数据中的节点 ID. */
-    private String id;
-    
+    /** 算例数据中的节点编号. */
+    private String number;
     private double demand;
     private double serviceTime;
     
@@ -32,10 +31,10 @@ public class Vertex {
         }
     }
     
-    Vertex(int index, String id, double x, double y, double demand, 
+    Vertex(int id, String number, double x, double y, double demand, 
             double serviceTime, double earliestTime, double latestTime) {
-        this.index = index;
         this.id = id;
+        this.number = number;
         this.x = x;
         this.y = y;
         this.demand = demand;;
@@ -43,27 +42,18 @@ public class Vertex {
         timeWindow = new TimeWindow(earliestTime, latestTime);
     }
     
-    Vertex(Vertex v) {
-        this.index = v.index;
-        this.id = v.id;
-        this.x = v.x;
-        this.y = v.y;
-        this.demand = v.demand;
-        this.serviceTime = v.serviceTime;
-        this.timeWindow = new TimeWindow(v.timeWindow.earliestTime, v.timeWindow.latestTime);
-    }
-    
     double getDistanceTo(Vertex v) {
-        int distToRound = (int)(10 * Math.sqrt((this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y)));
-        return distToRound / 10.0;
+        // 保留两位小数
+        int distToRound = (int)(100 * Math.sqrt((this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y)));
+        return distToRound / 100.0;
     }
     
-    public int getIndex() {
-        return index;
-    }
-    
-    public String getId() {
+    public int getId() {
         return id;
+    }
+    
+    public String getNumber() {
+        return number;
     }
     
     public double getDemand() {

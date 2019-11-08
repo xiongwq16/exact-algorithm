@@ -1,6 +1,13 @@
 package vrptw.solution;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import vrptw.parameter.Parameters;
+import vrptw.problem.Vertex;
+import vrptw.problem.Vrptw;
 
 /**
  * 路径.
@@ -10,72 +17,88 @@ import java.util.ArrayList;
  * @since JDK1.8
  */
 public class Path {
-    /** 路径上的节点的索引数组. */
-    private ArrayList<Integer> vertexIndices;
-    /** 该路径上各个节点的访问次数. */
-    private int[] vertexVisitTime;
+    /** 路径上的节点的 ID 数组. */
+    private ArrayList<Integer> vertexIds;
+    /** 该路径上各个客户被访问的次数. */
+    private Map<Integer, Integer> cusVisitedTime;
     
     /** 路径的实际成本. */
     private double cost;
-    
+        
     /**
-     * Create a Instance Path.
+     * 根据节点访问序列生成路径.
      * 
-     * @param vertexIndices 路径上的节点的索引数组
-     * @param cost 路径的成本
-     * @param totalVertexNum 问题中的节点总数
+     * @param vrptwIns VRPTW instance
+     * @param vertexIds 路径上的节点的 ID 数组
      */
-    public Path(ArrayList<Integer> vertexIndices, double cost, int totalVertexNum) {        
-        this.vertexIndices = new ArrayList<>(vertexIndices);
-        this.vertexVisitTime = new int[totalVertexNum];
-        for (int i = 0; i < vertexIndices.size(); i++) {
-            this.vertexVisitTime[vertexIndices.get(i)] = 1;
+    public Path(Vrptw vrptwIns, List<Integer> vertexIds) {        
+        int visitVertexNum = vertexIds.size();
+        if (vertexIds.get(0) != 0 || vertexIds.get(visitVertexNum - 1) != vrptwIns.getVertexNum() - 1) {
+            throw new IllegalArgumentException("Path without start depot and en depot is illegal.");
         }
         
-        this.cost = cost;
-    }
+        this.vertexIds = new ArrayList<>(vertexIds);
         
+        int cusNum = vrptwIns.getCusNum();
+        cusVisitedTime = new HashMap<Integer, Integer>((int) (cusNum / Parameters.LOADER_FACTOR) + 1);
+        // 初始化为 0
+        for (Vertex cus: vrptwIns.getCustomers()) {
+            cusVisitedTime.put(cus.getId(), 0);
+        }
+        
+        cost = vrptwIns.getDistMatrix()[0][vertexIds.get(1)];
+        for (int i = 1; i < visitVertexNum - 1; i++) {
+            int vertexId = vertexIds.get(i);
+            cusVisitedTime.put(vertexId, cusVisitedTime.get(vertexId) + 1);
+            cost += vrptwIns.getDistMatrix()[vertexId][vertexIds.get(i + 1)];
+        }
+        
+    }
+    
     /**
      * 计算并返回 sValue
-     * Svalue[i] = 1 − |K| * (sum[i][j], for j in V)，其中 V 表示客户和配送中心，<br>
+     * Svalue[i] = 1 − |K| * (sum[i][j], for j in vertexes)，其中 V 表示客户和配送中心，<br>
      * 对应原模型中的 sum (x[i][j][k], for j in vertexes, k in |K|) = 1.
      * 
-     * @param vehNum 车辆数
+     * @param vrptwIns VRPTW 算例
      * @return Svalue
      */
-    public double[] calSvalue(int vehNum) {
-        int totalVertexNum = this.vertexVisitTime.length;
-        double[] svalue = new double[totalVertexNum];
+    public Map<Integer, Integer> getSvalue(Vrptw vrptwIns) {
+        int cusNum = vrptwIns.getCusNum();
+        Map<Integer, Integer> svalue = new HashMap<>((int) (cusNum / Parameters.LOADER_FACTOR) + 1);
         // 初始化
-        for (int i = 0; i < totalVertexNum; i++) {
-            svalue[i] = 1;
+        for (Vertex v: vrptwIns.getCustomers()) {
+            svalue.put(v.getId(), 1);
         }
         
         // 更新在路径上的点对应的 sValue[i]
-        for (int i = 0; i < vertexIndices.size() -  1; i++) {
-            svalue[vertexIndices.get(i)] -= vehNum;
+        int vehNum = vrptwIns.getVehNum();
+        for (int vertexId: this.vertexIds) {
+            svalue.put(vertexId, svalue.get(vertexId) - vehNum);
         }
         
         return svalue;
     }
     
-    public String pathToString() {   
+    @Override
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         
-        this.vertexIndices.forEach(index -> sb.append(index + "-"));
+        this.vertexIds.forEach(id -> sb.append(id + "-"));
         
         return sb.substring(0, sb.length() - 1).toString();
     }
     
-    public int[] getVertexVisitTime() {
-        return vertexVisitTime;
+    public ArrayList<Integer> getVertexIds() {
+        return vertexIds;
+    }
+    
+    public Map<Integer, Integer> getCusVisitedTime() {
+        return cusVisitedTime;
     }
     
     public double getCost() {
         return cost;
     }
-
-    public ArrayList<Integer> getVertexIndices() {
-        return vertexIndices;
-    }
+    
 }

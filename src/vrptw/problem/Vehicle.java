@@ -11,15 +11,11 @@ public class Vehicle {
     private double speed;
     private double capacity;
     
-    public Vehicle(double speed, double capacity) {
+    Vehicle(double speed, double capacity) {
         this.speed = speed;
         this.capacity = capacity;
     }
     
-    public Vehicle(Vehicle veh) {
-        this.speed = veh.speed;
-        this.capacity = veh.capacity;
-    }
     
     public double getSpeed() {
         return speed;
