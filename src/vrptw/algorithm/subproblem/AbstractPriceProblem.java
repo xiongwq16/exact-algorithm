@@ -1,86 +1,89 @@
 package vrptw.algorithm.subproblem;
 
 import java.util.ArrayList;
+import java.util.Map;
 
+import vrptw.parameter.Parameters;
 import vrptw.problem.Vrptw;
 import vrptw.solution.Path;
 
 /**
- * VRPTW 的子问题（ESPPTWCC / SPPTWCC）抽象类.
+ * VRPTW 的 Price Problem（ESPPTWCC / SPPTWCC）抽象类.
  * 
  * @author Xiong Wangqi
  * @version V1.0
  * @since JDK1.8
  */
-abstract public class AbstractSubProblem {
+public abstract class AbstractPriceProblem {
+    protected final double capacity;
     protected final int vertexNum;
     protected final Vrptw vrptwIns;
+
+    protected double[][] timeMatrix;
+    protected double[][] revisedCostMatrix;
     
-    protected final double[][] revisedCostMatrix;
-    
-    protected Path shortestPath;
-    /** 最短路径对应的 reduced cost. */
-    protected double reducedCost;
+    protected ArrayList<Path> shortestPaths;
+    /** 被对偶变量修改后的最短路径的成本. */
+    protected double revisedCostOfShortestPath;
     
     /**
      * 构造函数.
      * 
      * @param vrptwIns VRPTW 问题实例
-     * @param lambda   Dual prices of sum(x[i][j][k] for j in V, k in K) = 1
      */
-    public AbstractSubProblem(Vrptw vrptwIns, double[] lambda) {
-        // startDepot and endDepot has no lambda
-        if (lambda.length != vrptwIns.getVertexNum() - 2) {
-            throw new IllegalArgumentException(
-                    String.format("The lenght of lambda should be %d", vrptwIns.getVertexNum() - 2));
-        }
-
+    public AbstractPriceProblem(Vrptw vrptwIns) {
         this.vrptwIns = vrptwIns;
-
         vertexNum = vrptwIns.getVertexNum();
-        revisedCostMatrix = new double[vertexNum][vertexNum];
-        // startDepot and endDepot(dummy)
-        for (int j = 0; j < vertexNum; j++) {
-            revisedCostMatrix[0][j] = vrptwIns.getDistMatrix()[0][j];
-            revisedCostMatrix[j][vertexNum - 1] = vrptwIns.getDistMatrix()[j][vertexNum - 1];
-        }
-        
-        // customers
-        for (int i = 1; i < vertexNum - 1; i++) {
-            for (int j = 0; j < vertexNum; j++) {
-                revisedCostMatrix[i][j] = vrptwIns.getDistMatrix()[i][j] - lambda[i - 1];
-            }
-
-        }
-
+        capacity = vrptwIns.getVehicle().getCapacity();
+        shortestPaths = new ArrayList<>(Parameters.INITIAL_CAPACITY);
     }
-    
-    /**
-     * 求解子问题.
-     */
-    abstract public void solve();
 
     /**
-     * 基于节点访问序列，reduced cost 生成路径.
+     * Solve the price problem.
      * 
-     * @param vertexIndices 节点访问序列（包括 startDepot 和 endDepot）
-     * @return 给定节点访问序列对应的路径
+     * @param dualValues dual values of RMLP
+     * @param timeMatrix time matrix
      */
-    protected Path createPath(ArrayList<Integer> vertexIndices) {
-        double cost = 0;
-        for (int i = 0; i < vertexIndices.size() - 1; i++) {
-            cost += vrptwIns.getDistMatrix()[vertexIndices.get(i)][vertexIndices.get(i + 1)];
+    public abstract void solve(Map<Integer, Double> dualValues, double[][] timeMatrix);
+        
+    /**
+     * 重置相关变量，准备下一次求解.
+     */
+    protected abstract void reset();
+    
+    /**
+     * update the dual values and the revisedCost.
+     * 
+     * @param newDualValues new dual values
+     */
+    protected void updateDistAndCostMatrix(Map<Integer, Double> newDualValues) {
+        // startDepot and endDepot has no lambda
+        if (newDualValues.size() != vrptwIns.getCusNum()) {
+            throw new IllegalArgumentException(
+                    String.format("The lenght of lambda should be %d", vrptwIns.getCusNum()));
         }
         
-        return new Path(vertexIndices, cost, vrptwIns.getVertexNum());
+        revisedCostMatrix = new double[vertexNum][vertexNum];
+        for (int i = 0; i < vertexNum; i++) {
+            for (int j = 0; j < vertexNum; j++) {
+                revisedCostMatrix[i][j] = vrptwIns.getDistMatrix()[i][j];
+            }
+        }
+        
+        for (Map.Entry<Integer, Double> entry: newDualValues.entrySet()) {
+            for (int j = 0; j < vertexNum; j++) {
+                revisedCostMatrix[entry.getKey()][j] = revisedCostMatrix[entry.getKey()][j] - entry.getValue();
+            }
+        }
+        
     }
     
-    public Path getShortestPath() {
-        return shortestPath;
+    public ArrayList<Path> getShortestPath() {
+        return shortestPaths;
     }
     
-    public double getReducedCost() {
-        return reducedCost;
+    public double getRevisedCostOfShortestPath() {
+        return revisedCostOfShortestPath;
     }
     
 }
