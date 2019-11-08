@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-import vrptw.algorithm.subproblem.AbstractSubProblem;
+import vrptw.algorithm.subproblem.AbstractPriceProblem;
 import vrptw.parameter.Parameters;
 import vrptw.problem.Vertex;
 import vrptw.problem.Vrptw;
@@ -21,7 +21,7 @@ import vrptw.solution.Path;
  * @version V1.0
  * @since JDK1.8
  */
-public class SpptwccViaLabelSetting extends AbstractSubProblem implements LabelAlgorithm {
+public class SpptwccViaLabelSetting extends AbstractPriceProblem implements LabelAlgorithm {
     private Vertex[] vertexes;
     
     /** 待处理的 Labels，采用基于 lexicographically minimal 的优先队列. */

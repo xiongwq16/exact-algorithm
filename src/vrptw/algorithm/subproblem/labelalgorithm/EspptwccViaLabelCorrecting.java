@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
-import vrptw.algorithm.subproblem.AbstractSubProblem;
+import vrptw.algorithm.subproblem.AbstractPriceProblem;
 import vrptw.parameter.Parameters;
 import vrptw.problem.Vertex;
 import vrptw.problem.Vrptw;
@@ -22,7 +22,7 @@ import vrptw.solution.Path;
  * @version V1.0
  * @since JDK1.8
  */
-public class EspptwccViaLabelCorrecting extends AbstractSubProblem implements LabelAlgorithm {
+public class EspptwccViaLabelCorrecting extends AbstractPriceProblem implements LabelAlgorithm {
     private Vertex[] vertexes;
     
     /** 待处理的节点队列. */
