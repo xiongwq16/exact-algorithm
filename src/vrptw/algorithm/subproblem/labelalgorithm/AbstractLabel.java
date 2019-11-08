@@ -1,57 +1,121 @@
 package vrptw.algorithm.subproblem.labelalgorithm;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
+import vrptw.parameter.Parameters;
+
 /**
- * 抽象标签类，包括成本，以及两类“资源”-总需求量和耗时.
+ * 抽象标签类，包括成本，以及两类“资源”-总需求量和到达节点的时间.
  * 
  * @author Xiong Wangqi
  * @version V1.0
  * @since JDK1.8
  */
 abstract class AbstractLabel {
-    /** 到达当前节点的成本，也是表示的路径的 reduced cost. */
-    private double cost;
-    /** 到达当前节点的耗时. */
-    private double time;
+    /** 到达当前节点的成本，也是表示的路径的 revised cost. */
+    final double cost;
+    /** 到达当前节点的时间. */
+    final double time;
     /** 当前路径上所有客户的总需求量. */
-    private double demand;
+    final double demand;
     /** 标签所在节点（路径上的最后一个节点）. */
-    private int vertex;
+    final int vertexId;
     /** 上一个 label. */
-    private AbstractLabel preLabel;
+    final AbstractLabel preLabel;
     
-    AbstractLabel(double cost, double time, double demand, int vertex, AbstractLabel preLabel) {
+    AbstractLabel(double cost, double time, double demand, int vertexId, AbstractLabel preLabel) {
         this.cost = cost;
         this.time = time;
         this.demand = demand;
-        this.vertex = vertex;
+        this.vertexId = vertexId;
         this.preLabel = preLabel;
     }
 
     /**
-     * 优超准则判别.
+     * 相同起点和终点的两个标签之间的优超准则判别：<br>
+     * 如果各个“资源”情况 “this” <= “that”, “this” 优超 “that”，<br>
+     * 注意这里并未排除相等的情况，会在其他方法中考虑.
      * 
-     * @param other 待比较的标签
-     * @return 给定标签 other 是否"优超"当前标签（this）
+     * @param that 待比较的标签
+     * @return “this” 是否优超 “that”
      */
-    abstract boolean isDominatedBy(AbstractLabel other);
-
-    double getCost() {
-        return cost;
+    abstract boolean dominate(AbstractLabel that);
+    
+    /**
+     * 将标签转换为节点访问序列.
+     * 
+     * @param label 给定的标签
+     * @return 标签对应的路径
+     */
+    ArrayList<Integer> getVisitVertexes() {
+        ArrayList<Integer> vertexIds = new ArrayList<>(Parameters.INITIAL_CAPACITY);
+        vertexIds.add(vertexId);
+        
+        AbstractLabel label = this;
+        while ((label = label.preLabel) != null) {
+            vertexIds.add(label.vertexId);
+        }
+        
+        Collections.reverse(vertexIds);
+        
+        return vertexIds;
     }
-
-    double getTime() {
-        return time;
+    
+    @Override
+    public boolean equals(Object other) {
+        if (other == this) {
+            return true;
+        }
+        
+        if (other == null || !(other instanceof AbstractLabel)) {
+            return false;
+        }
+        
+        AbstractLabel label = this;
+        AbstractLabel that = (AbstractLabel) other;
+        if (that.vertexId != label.vertexId) {
+            return false;
+        }
+        
+        while ((label = label.preLabel) != null) {
+            that = that.preLabel;
+            if (that == null) {
+                return false;
+            }
+            
+            if (that.vertexId != label.vertexId) {
+                return false;
+            }
+        }
+        
+        if (that.preLabel != null) {
+            return false;
+        }
+        
+        return true;
     }
-
-    double getDemand() {
-        return demand;
+    
+    @Override
+    public String toString() {
+        ArrayList<Integer> vertexIds = new ArrayList<>(Parameters.INITIAL_CAPACITY);
+        vertexIds.add(this.vertexId);
+        
+        AbstractLabel label = this;
+        while ((label = label.preLabel) != null) {
+            vertexIds.add(label.vertexId);
+        }
+        
+        Collections.reverse(vertexIds);
+        
+        StringBuilder sb = new StringBuilder();
+        
+        vertexIds.forEach(id -> sb.append(id + "-"));
+        sb.deleteCharAt(sb.length() - 1);
+        
+        sb.append(String.format("\ncost: %f, time: %f, demand: %f\n", cost, time, demand));
+        
+        return sb.toString();
     }
-
-    int getVertex() {
-        return vertex;
-    }
-
-    AbstractLabel getPreLabel() {
-        return this.preLabel;
-    }
+    
 }
