@@ -58,8 +58,13 @@ public class Vrptw {
             }
 
             if (count >= 10) {
-                int id = count - 10;
                 String[] str = line.trim().split("\\s+");
+                if (str.length <= 1) {
+                    // 空行跳出
+                    break;
+                }
+                
+                int id = count - 10;
                 String number = str[0];
                 double xcoor = Double.parseDouble(str[1]);
                 double ycoor = Double.parseDouble(str[2]);
@@ -67,7 +72,7 @@ public class Vrptw {
                 double earliestTime = Double.parseDouble(str[4]);
                 double latestTime = Double.parseDouble(str[5]);
                 double serviceTime = Double.parseDouble(str[6]);
-
+                
                 Vertex vertex = new Vertex(id, number, xcoor, ycoor, demand, serviceTime, earliestTime, latestTime);
                 vertexes.add(vertex);
             }
@@ -94,7 +99,7 @@ public class Vrptw {
             for (int j = 0; j < vertexNum; j++) {
                 Vertex v2 = vertexes.get(j);
                 if (i == vertexNum - 1 || j == 0) {
-                    distMatrix[i][j] = Double.MAX_VALUE;
+                    distMatrix[i][j] = Parameters.BIG_TRAVEL_TIME;
                 } else {
                     distMatrix[i][j] = v1.getDistanceTo(v2);
                 }
