@@ -82,7 +82,10 @@ public class SpptwccViaLabelSetting extends AbstractPriceProblem implements Labe
             
             // Step 2&3: Extension and Dominance
             for (int i = 0; i < vertexNum; i++) {
-                // all vertexes
+                // all vertexes except the arc with Double.Max_Value
+                if (timeMatrix[currlabel.vertexId][i] == Double.MAX_VALUE) {
+                    continue;
+                }
                 this.labelExtension(currlabel, i);
             }
             

@@ -84,7 +84,10 @@ public class EspptwccViaLabelCorrecting extends AbstractPriceProblem implements 
             labelExtendedFromCurrToNext = new ArrayList<>(Parameters.INITIAL_CAPACITY);
             for (int j = 0; j < vertexNum; j++) {
                 // Step 2: Exploration of the successor for all label on current vertex
-                
+                // all vertexes except the arc with Double.Max_Value
+                if (timeMatrix[currVertexId][j] == Double.MAX_VALUE) {
+                    continue;
+                }
                 for (AbstractLabel label : labelList.get(currVertexId)) {
                     // Extend to the reachable vertexes
                     this.labelExtension(label, j);
