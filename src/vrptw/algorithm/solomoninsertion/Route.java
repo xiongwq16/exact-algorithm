@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import vrptw.parameter.Parameters;
 import vrptw.problem.Vertex;
-import vrptw.problem.Vrptw;
 
 /**
  * 路径.
@@ -16,8 +15,6 @@ import vrptw.problem.Vrptw;
  * @since JDK1.8
  */
 class Route {
-    static Vrptw vrptwIns;
-    
     /** 路径上的客户的数量. */
     private int cusNum;
 
@@ -45,14 +42,14 @@ class Route {
     }
     
     void addEndDepot() {
-        int endDepotId = vrptwIns.getVertexNum() - 1;
+        int endDepotId = SolomonInsertion.vrptwIns.getVertexNum() - 1;
         
-        cost += vrptwIns.getDistMatrix()[activities.get(cusNum).vertexId][endDepotId];
+        cost += SolomonInsertion.vrptwIns.getDistMatrix()[activities.get(cusNum).vertexId][endDepotId];
 
         // 获取最后一个节点的信息
         Activity lastActivity = activities.get(cusNum);
         // 到达时间 = 离开上一个客户的时间 + 行驶时间getTimeBetween
-        double arrTime = lastActivity.departTime + vrptwIns.getTimeMatrix()[lastActivity.vertexId][endDepotId];
+        double arrTime = lastActivity.departTime + SolomonInsertion.timeMatrix[lastActivity.vertexId][endDepotId];
         Activity newActivity = new Activity(endDepotId, arrTime);
         activities.add(newActivity);
     }
@@ -64,13 +61,13 @@ class Route {
      */
     void addVertexToEnd(int addVertexId) {
         // 注意返回配送中心的部分暂不计算
-        cost += vrptwIns.getDistMatrix()[activities.get(cusNum).vertexId][addVertexId];
-        load += vrptwIns.getVertexes().get(addVertexId).getDemand();
+        cost += SolomonInsertion.vrptwIns.getDistMatrix()[activities.get(cusNum).vertexId][addVertexId];
+        load += SolomonInsertion.vrptwIns.getVertexes().get(addVertexId).getDemand();
         
         // 获取最后一个节点的信息
         Activity lastActivity = activities.get(cusNum);
         // 到达时间 = 离开上一个客户的时间 + 行驶时间getTimeBetween
-        double arrTime = lastActivity.departTime + vrptwIns.getTimeMatrix()[lastActivity.vertexId][addVertexId];
+        double arrTime = lastActivity.departTime + SolomonInsertion.timeMatrix[lastActivity.vertexId][addVertexId];
         Activity newActivity = new Activity(addVertexId, arrTime);
         activities.add(newActivity);
 
@@ -88,7 +85,7 @@ class Route {
         if (pos > cusNum) {
             throw new IllegalArgumentException("The insertion pos should be in [0, cusNum]");
         }
-
+        
         // 插入到路径最后的情况（包括 cusNum = 0 的情况）
         if (pos == cusNum) {
             this.addVertexToEnd(cusId);
@@ -97,16 +94,16 @@ class Route {
 
         // 到达时间 = 离开上一个客户的时间 + 行驶时间
         Activity preActivity = activities.get(pos);
-        double arrTime = preActivity.departTime + vrptwIns.getTimeMatrix()[preActivity.vertexId][cusId];
+        double arrTime = preActivity.departTime + SolomonInsertion.timeMatrix[preActivity.vertexId][cusId];
         Activity newActivity = new Activity(cusId, arrTime);
         
         // 删除一条弧，增加两条弧
         Activity nextActivity = activities.get(pos + 1);
-        cost = cost - vrptwIns.getDistMatrix()[preActivity.vertexId][nextActivity.vertexId]
-                + vrptwIns.getDistMatrix()[preActivity.vertexId][cusId]
-                + vrptwIns.getDistMatrix()[cusId][nextActivity.vertexId];
+        cost = cost - SolomonInsertion.vrptwIns.getDistMatrix()[preActivity.vertexId][nextActivity.vertexId]
+                + SolomonInsertion.vrptwIns.getDistMatrix()[preActivity.vertexId][cusId]
+                + SolomonInsertion.vrptwIns.getDistMatrix()[cusId][nextActivity.vertexId];
 
-        load += vrptwIns.getVertexes().get(cusId).getDemand();
+        load += SolomonInsertion.vrptwIns.getVertexes().get(cusId).getDemand();
 
         // 对于 ArrayLis 来说，实际上是添加到 pos 之后一个位置
         activities.add(pos + 1, newActivity);
@@ -125,27 +122,26 @@ class Route {
         if (cusNum == 0) {
             throw new IllegalArgumentException(String.format("No removeing when the cusNum is %d", cusNum));
         }
-
+        
         if (pos == 0 || pos > cusNum) {
             throw new IllegalArgumentException(String.format("The parameter \"ith\" should be in [1, %d]", cusNum));
         }
-
         int vertexToRemoveId = activities.get(pos).vertexId;
         int preVertexId = activities.get(pos - 1).vertexId;
 
         // 删除最后一个被服务的客户
         if (pos == cusNum) {
             // 删除一条弧
-            cost = cost - vrptwIns.getDistMatrix()[preVertexId][vertexToRemoveId];
+            cost = cost - SolomonInsertion.vrptwIns.getDistMatrix()[preVertexId][vertexToRemoveId];
         } else {
             // 删除两条弧，增加一条狐
             int nextVertexId = activities.get(pos + 1).vertexId;
-            cost = cost - vrptwIns.getDistMatrix()[preVertexId][vertexToRemoveId]
-                    - vrptwIns.getDistMatrix()[vertexToRemoveId][nextVertexId]
-                    + vrptwIns.getDistMatrix()[preVertexId][nextVertexId];
+            cost = cost - SolomonInsertion.vrptwIns.getDistMatrix()[preVertexId][vertexToRemoveId]
+                    - SolomonInsertion.vrptwIns.getDistMatrix()[vertexToRemoveId][nextVertexId]
+                    + SolomonInsertion.vrptwIns.getDistMatrix()[preVertexId][nextVertexId];
         }
         
-        load -= vrptwIns.getVertexes().get(vertexToRemoveId).getDemand();
+        load -= SolomonInsertion.vrptwIns.getVertexes().get(vertexToRemoveId).getDemand();
         
         activities.remove(pos);
         cusNum--;
@@ -166,9 +162,9 @@ class Route {
             throw new IllegalArgumentException(String.format("The insertion pos should be in [0, %d]", cusNum));
         }        
         
-        Vertex cus = vrptwIns.getVertexes().get(cusId);
+        Vertex cus = SolomonInsertion.vrptwIns.getVertexes().get(cusId);
         Activity preActivity = activities.get(pos);
-        double time = preActivity.departTime + vrptwIns.getTimeMatrix()[preActivity.vertexId][cusId];
+        double time = preActivity.departTime + SolomonInsertion.timeMatrix[preActivity.vertexId][cusId];
         
         // 判断插入的客户本身的时间窗是否被违反
         if (time > cus.getLatestTime()) {
@@ -187,13 +183,13 @@ class Route {
         for (int i = pos + 1; i <= cusNum; i++) {
             // 模拟到达 i 处客户的时间
             if (i == pos + 1) {
-                time += vrptwIns.getTimeMatrix()[cusId][activities.get(pos + 1).vertexId];
+                time += SolomonInsertion.timeMatrix[cusId][activities.get(pos + 1).vertexId];
             } else {
-                time += vrptwIns.getTimeMatrix()[activities.get(i - 1).vertexId][activities.get(i).vertexId];
+                time += SolomonInsertion.timeMatrix[activities.get(i - 1).vertexId][activities.get(i).vertexId];
             }
             
             int currVertexId = activities.get(i).vertexId;
-            Vertex currVertex = vrptwIns.getVertexes().get(currVertexId);
+            Vertex currVertex = SolomonInsertion.vrptwIns.getVertexes().get(currVertexId);
             
             if (time > currVertex.getLatestTime()) {
                 return false;
@@ -209,13 +205,14 @@ class Route {
         }
         
         // 模拟返回配送中心的时间
+        int endDepotId = SolomonInsertion.vrptwIns.getVertexNum() - 1;
         if (pos != cusNum) {
-            time += vrptwIns.getTimeMatrix()[activities.get(cusNum).vertexId][vrptwIns.getVertexNum() - 1];
+            time += SolomonInsertion.timeMatrix[activities.get(cusNum).vertexId][endDepotId];
         } else {
-            time += vrptwIns.getTimeMatrix()[cusId][vrptwIns.getVertexNum() - 1];
+            time += SolomonInsertion.timeMatrix[cusId][endDepotId];
         }
         
-        if (time > vrptwIns.getVertexes().get(vrptwIns.getVertexNum() - 1).getLatestTime()) {
+        if (time > SolomonInsertion.vrptwIns.getVertexes().get(endDepotId).getLatestTime()) {
             return false;
         }
         
@@ -229,17 +226,15 @@ class Route {
         double demand = 0;
         for (int i = 1; i <= cusNum; i++) {
             // 到达第 i 个客户的时间
-            time += vrptwIns.getTimeMatrix()[vertexIds.get(i - 1)][vertexIds.get(i)];
-            Vertex vertex = vrptwIns.getVertexes().get(vertexIds.get(i));
+            time += SolomonInsertion.timeMatrix[vertexIds.get(i - 1)][vertexIds.get(i)];
+            Vertex vertex = SolomonInsertion.vrptwIns.getVertexes().get(vertexIds.get(i));
             
             demand += vertex.getDemand();
-            if (demand > vrptwIns.getVehicle().getCapacity()) {
-                System.out.println("Demand Infeasible");
+            if (demand > SolomonInsertion.vrptwIns.getVehicle().getCapacity()) {
                 return false;
             }
             
             if (time > vertex.getLatestTime()) {
-                System.out.println(i + "th Customer TimeWindow Infeasible");
                 return false;
             }
             
@@ -252,9 +247,9 @@ class Route {
         }
         
         // 模拟到达配送中心的时间
-        time += vrptwIns.getTimeMatrix()[activities.get(cusNum).vertexId][vrptwIns.getVertexNum() - 1];
-        if (time > vrptwIns.getVertexes().get(vrptwIns.getVertexNum() - 1).getLatestTime()) {
-            System.out.println("EndDepot TimeWindow Infeasible");
+        int endDepotId = SolomonInsertion.vrptwIns.getVertexNum() - 1;
+        time += SolomonInsertion.timeMatrix[activities.get(cusNum).vertexId][endDepotId];
+        if (time > SolomonInsertion.vrptwIns.getVertexes().get(endDepotId).getLatestTime()) {
             return false;
         }
         
@@ -276,8 +271,8 @@ class Route {
             // 获取最后一个节点的信息
             Activity lastActivity = activities.get(cusNum);
             // 到达时间 = 离开上一个客户的时间 + 行驶时间getTimeBetween
-            int endDepotId = vrptwIns.getVertexNum() - 1;
-            return lastActivity.departTime + vrptwIns.getTimeMatrix()[lastActivity.vertexId][endDepotId];
+            int endDepotId = SolomonInsertion.vrptwIns.getVertexNum() - 1;
+            return lastActivity.departTime + SolomonInsertion.timeMatrix[lastActivity.vertexId][endDepotId];
         }
 
         return activities.get(pos).startTime;
@@ -298,8 +293,8 @@ class Route {
             Activity preActivity = activities.get(i - 1);
             Activity currActivity = activities.get(i);
             
-            double changedArrTime = preActivity.departTime
-                    + vrptwIns.getTimeMatrix()[preActivity.vertexId][currActivity.vertexId];
+            double changedArrTime = preActivity.departTime 
+                    + SolomonInsertion.timeMatrix[preActivity.vertexId][currActivity.vertexId];
 
             isDepartTimeChanged = currActivity.isDepartTimeChanged(changedArrTime);
         }
@@ -373,7 +368,7 @@ class Route {
             this.startTime = arrTime;
 
             // 早于时间窗开启时刻到达，需等待
-            Vertex v = vrptwIns.getVertexes().get(vertexId);
+            Vertex v = SolomonInsertion.vrptwIns.getVertexes().get(vertexId);
             if (arrTime <= v.getEarliestTime()) {
                 this.startTime = v.getEarliestTime();
             }
@@ -384,8 +379,8 @@ class Route {
         @Override
         public String toString() {
             return String.format("%.3f-%.3f-%.3f(%.3f-%.3f)", arrTime, startTime, departTime, 
-                    vrptwIns.getVertexes().get(vertexId).getEarliestTime(), 
-                    vrptwIns.getVertexes().get(vertexId).getLatestTime());
+                    SolomonInsertion.vrptwIns.getVertexes().get(vertexId).getEarliestTime(), 
+                    SolomonInsertion.vrptwIns.getVertexes().get(vertexId).getLatestTime());
         }
 
     }
