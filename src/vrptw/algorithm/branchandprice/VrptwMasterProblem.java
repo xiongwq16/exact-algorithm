@@ -28,8 +28,11 @@ import vrptw.solution.Path;
  */
 public class VrptwMasterProblem {
     private Vrptw vrptwIns;
-    public IloCplex rmlpSolver;
     
+    /** Solomon Insertion 得到的初始解的成本. */
+    private double initialSolCost;
+    
+    private IloCplex rmlpSolver;
     /** 每个客户都应该被访问一次. */
     private Map<Integer, IloRange> cusVisitedCstrs;
     /** Dual values of sum(x[i][j][k] for j in vertexes, k in vehicles) = 1. */
@@ -183,6 +186,10 @@ public class VrptwMasterProblem {
     void end() {
         rmlpSolver.end();
     }
+    
+    double getInitialSolCost() {
+        return initialSolCost;
+    }
         
     private void initialModel() throws IloException {
         rmlpSolver = new IloCplex();
@@ -197,7 +204,7 @@ public class VrptwMasterProblem {
         vehNumCtrs = rmlpSolver.addRange(-Double.MAX_VALUE, vrptwIns.getVehNum(), "VehNum");
         
         // add initial path
-        Path[] initialPaths = this.generateInitailPaths();
+        Path[] initialPaths = this.generateInitailPaths(vrptwIns, vrptwIns.getTimeMatrix());
         for (int i = 0; i < initialPaths.length; i++) {
             this.addColumn(initialPaths[i]);
         }
@@ -205,10 +212,19 @@ public class VrptwMasterProblem {
         this.setCplexParams();
     }
     
-    private Path[] generateInitailPaths() throws IloException {
+    /**
+     * 生成初始路径.
+     * 
+     * @param vrptwIns VRPTW Instance
+     * @param timeMatrix 考虑 branchArc 后的时间矩阵
+     * @return
+     */
+    public Path[] generateInitailPaths(Vrptw vrptwIns, double[][] timeMatrix) {
         // 调用 Solomon Insertion 生成初始解
-        SolomonInsertion i1 = new SolomonInsertion(vrptwIns);
+        SolomonInsertion i1 = new SolomonInsertion(vrptwIns, timeMatrix);
         i1.constructRoutes();
+        
+        this.initialSolCost = i1.getCost();
         
         return i1.getPaths();
         
@@ -220,6 +236,16 @@ public class VrptwMasterProblem {
 //            i++;
 //        }
 //        return ps;
+    }
+    
+    Path[] getPaths() {
+        // 去除因 resizing 导致的空路径
+        Path[] pathsWithoutNull = new Path[pathNum];
+        for (int i = 0; i < pathNum; i++) {
+            pathsWithoutNull[i] = paths[i];
+        }
+        
+        return pathsWithoutNull;
     }
     
     /**
@@ -245,6 +271,7 @@ public class VrptwMasterProblem {
         // set simplex tolerances
         rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Optimality, 1e-9);
         rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Markowitz, 0.999);
+        rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Feasibility, 1e-6);
         
         // No iteration messages until solution for LP relaxation
         rmlpSolver.setParam(IloCplex.Param.Simplex.Display, 0);
@@ -268,16 +295,6 @@ public class VrptwMasterProblem {
         }
         usePath = tempVar;
         paths = tempPaths;
-    }
-    
-    Path[] getPaths() {
-        // 去除因 resizing 导致的空路径
-        Path[] pathsWithoutNull = new Path[pathNum];
-        for (int i = 0; i < pathNum; i++) {
-            pathsWithoutNull[i] = paths[i];
-        }
-        
-        return pathsWithoutNull;
     }
     
     /**

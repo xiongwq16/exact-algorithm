@@ -38,9 +38,9 @@ class BabNode implements Comparable<BabNode> {
     /** arc use to generate children nodes. */
     private Arc arcToBranch;
     
-    /** 当前节点对应的可行解的路径索引. */
-    private ArrayList<Integer> pathIndicesInNodeSol;
-    
+    /** 当前节点对应的 MIP 解的路径索引. */
+    private ArrayList<Integer> pathIndicesInMipSol;
+        
     /**
      * generate root node.
      * 
@@ -48,6 +48,8 @@ class BabNode implements Comparable<BabNode> {
      */
     BabNode(Vrptw vrptwIns) {
         BabNode.vrptwIns = vrptwIns;
+        
+        isLpFeasible = true;
         infeasiblePathIndices = new ArrayList<>(Parameters.INITIAL_CAPACITY);
         parent = null;
         depth = 0;
@@ -66,6 +68,7 @@ class BabNode implements Comparable<BabNode> {
             throw new IllegalArgumentException("Error in branch scheme, please check.");
         }
         
+        this.isLpFeasible = true;
         this.infeasiblePathIndices = new ArrayList<>(parent.infeasiblePathIndices);
 
         this.parent = parent;
@@ -94,43 +97,61 @@ class BabNode implements Comparable<BabNode> {
             countIter++;
             // solve the RMLP
             if (!masterProblem.solveLp()) {
-//                if (countIter == 0 && this.branchArcOfParent.branchValue == 0) {
-//                    // 初始路径不可行，由于分支导致之前生成的大量路径被“禁止”，需要生成新的初始路径
-//                    
-//                }
+                // FIXME 分支会使得之前生成的大量路径被“禁止”，从而导致子节点的可行路径不足以生成初始可行解，需要下一阶段优化
+                if (countIter == 0) {
+                    System.out.println("Initial CG Fail");
+                    System.exit(0);
+                    Path[] initialPaths = masterProblem.generateInitailPaths(vrptwIns, timeMatrix);
+                    if (initialPaths[0] == null) {
+                        // The RMLP is infeasible, set the cost to be big enough
+                        this.isLpFeasible = false;
+                        return;
+                    }
+                    for (int i = 0; i < initialPaths.length; i++) {
+                        masterProblem.addColumn(initialPaths[i]);
+                    }
+                    
+                    if (!masterProblem.solveLp()) {
+                        this.isLpFeasible = false;
+                        return;
+                    }
+                    
+                } else {
+                    this.isLpFeasible = false;
+                    return;
+                }
                 
-                // The RMLP is infeasible, set the cost to be big enough
-                this.isLpFeasible = false;
-                return;
             }
-                        
+            
             // solve price problem
             priceProblem.solve(masterProblem.getDualValOfCusCstr(), timeMatrix);
             
             // if the reduced cost > 0, MLP's solution found, stop; otherwise, add column
             double reduceCost = priceProblem.getRevisedCostOfShortestPath() - masterProblem.getDualValOfVehNum();
             if (reduceCost > -Parameters.EPS) {
-                this.isLpFeasible = true;
                 this.nodeLpObj = masterProblem.getObjective();
                 this.arcToBranch = masterProblem.findBranchArc();
                 
                 if (this.arcToBranch == null) {
                     // 可行解，存储对应的路径索引
-                    pathIndicesInNodeSol = new ArrayList<>(Parameters.INITIAL_CAPACITY);
+                    pathIndicesInMipSol = new ArrayList<>(Parameters.INITIAL_CAPACITY);
                     double[] usePath = masterProblem.getVarValue();
                     int length = usePath.length;
                     for (int i = 0; i < length; i++) {
                         if (usePath[i] > 1 - Parameters.EPS) {
-                            pathIndicesInNodeSol.add(i);
+                            pathIndicesInMipSol.add(i);
                         }
                     }
+                    
                 }
                 
+                System.out.println("LP Optimal" + ", Obj-" + masterProblem.getObjective());
                 return;
             }
             
-//            System.out.println(masterProblem.getDualValOfCusCstr().values().toString());
-//            System.out.println(countIter + ", Obj-" + masterProblem.getObjective() + ", RC-" + reduceCost + "\n");
+            if (countIter % 50 == 0) {
+                System.out.println(countIter + ", Obj-" + masterProblem.getObjective() + ", RC-" + reduceCost + "\n");
+            }
             
             // add shortest path to RMLP as new column
             for (Path p : priceProblem.getShortestPath()) {
@@ -155,38 +176,38 @@ class BabNode implements Comparable<BabNode> {
         Path[] paths = masterProblem.getPaths();
         int pathNum = paths.length;
         
+        int fromVertexId = branchArcOfParent.getFromVertexId();
+        int toVertexId = branchArcOfParent.getToVertexId();
         for (int i = 0; i < pathNum; i++) {
             if (infeasiblePathIndices.contains(i)) {
                 continue;
             }
             
             ArrayList<Integer> vertexIds = paths[i].getVertexIds();
-            int posOfBranchArcFrom = vertexIds.indexOf(branchArcOfParent.getFromVertexId());
+            int posOfBranchArcFrom = vertexIds.indexOf(fromVertexId);
             
             if (branchArcOfParent.branchValue == 0) {
                 // Path pass through branch arc is infeasible
                 if (posOfBranchArcFrom != -1 
-                        && vertexIds.get(posOfBranchArcFrom + 1) == branchArcOfParent.getToVertexId()) {
+                        && vertexIds.get(posOfBranchArcFrom + 1) == toVertexId) {
                     infeasiblePathIndices.add(i);
                 }
                 continue;
-            }            
+            }
             
             // branchValue = 1 is below
             // Path with arc starting from "branchArcFromId" but not ending at "branchArcToId" is infeasible
-            if (posOfBranchArcFrom != -1 
-                    && vertexIds.get(posOfBranchArcFrom + 1) != branchArcOfParent.getToVertexId()) {
+            if (posOfBranchArcFrom != -1 && vertexIds.get(posOfBranchArcFrom + 1) != toVertexId) {
                 infeasiblePathIndices.add(i);
             }
             
-            
             // Path with arc ending at "branchArcToId" but not starting from "branchArcFromId" is infeasible
             // Except the end of branch arc is end depot
-            if (branchArcOfParent.getToVertexId() == vrptwIns.getVertexNum() - 1) {
+            if (toVertexId == vrptwIns.getVertexNum() - 1) {
                 continue;
             }
-            int posOfBranchArcTo = vertexIds.indexOf(branchArcOfParent.getToVertexId());
-            if (posOfBranchArcTo != -1 && vertexIds.get(posOfBranchArcTo - 1) != branchArcOfParent.getFromVertexId()) {
+            int posOfBranchArcTo = vertexIds.indexOf(toVertexId);
+            if (posOfBranchArcTo != -1 && vertexIds.get(posOfBranchArcTo - 1) != fromVertexId) {
                 infeasiblePathIndices.add(i);
             }
             
@@ -306,8 +327,8 @@ class BabNode implements Comparable<BabNode> {
         }
     }
     
-    ArrayList<Integer> getPathIndicesInNodeSol() {
-        return pathIndicesInNodeSol;
+    ArrayList<Integer> getPathIndicesInMipSol() {
+        return pathIndicesInMipSol;
     }
     
     int getDepth() {

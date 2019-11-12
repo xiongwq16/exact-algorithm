@@ -74,8 +74,9 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
         }
         
         this.masterProblem = new VrptwMasterProblem(vrptwIns);
+        // RMLP 初始化调用的是 Solomon Insertion 算法，得到的是可行解，可用于设定上界   
+        this.upperBound = this.masterProblem.getInitialSolCost();
         
-        this.upperBound = Parameters.BB_INITIAL_UPPERBOUND;
         this.nodeNum = 0;
         this.nodePq = new PriorityQueue<>(Parameters.INITIAL_CAPACITY);
     }
@@ -89,7 +90,9 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
         
         // Solve initial master problem
         BabNode root = new BabNode(vrptwIns);
-        if (!this.tryToaddNodeToPriorityQueue(root)) {
+        this.addNodeToPriorityQueue(root);
+        
+        if (!root.isLpFeasible()) {
             System.out.println("VTPTW given is infeasible");
             return;
         }
@@ -101,37 +104,23 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
                 continue;
             }
             
-            Arc arcToBranch = node.getArcToBranch();
-            if (arcToBranch == null) {
-                // the solution of the node is feasible, compare with the current upper bound
-                if (Double.compare(node.getNodeLpObj(), upperBound) < 0) {
-                    this.updateUpperBound(node);
-                }
-                
-                continue;
-            }
-            
             // branch
+            Arc arcToBranch = node.getArcToBranch();
             int from = arcToBranch.getFromVertexId();
             int to = arcToBranch.getToVertexId();
             
-            // Left node, if the start / end of branch arc is depot, the left node is infeasible
-            if (from != 0 && to != vrptwIns.getVertexNum() - 1) {
-                BabNode left = new BabNode(node, from, to, 0);
-                this.tryToaddNodeToPriorityQueue(left);
-            }
+            BabNode left = new BabNode(node, from, to, 0);
+            this.addNodeToPriorityQueue(left);
             
             BabNode right = new BabNode(node, from, to, 1);
-            this.tryToaddNodeToPriorityQueue(right);
+            this.addNodeToPriorityQueue(right);
         }
         
         double timeConsume = System.currentTimeMillis() - startTime;
         vrptwSol = new VrptwSolution(
-                vrptwIns, masterProblem.getPaths(), bestNode.getPathIndicesInNodeSol(), bestNode.getNodeLpObj());
+                vrptwIns, masterProblem.getPaths(), bestNode.getPathIndicesInMipSol(), bestNode.getNodeLpObj());
         vrptwSol.output(timeConsume, nodeNum);
-        
-//        masterProblem.rmlpSolver.exportModel("/Users/xiong/学习资源/实践/Algorithm/exactalgorithm/results/rmlp.lp");
-        
+                
         masterProblem.end();
     }
     
@@ -139,21 +128,24 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
      * add given node to Priority Queue when it's LP feasible and having a LP objective smaller the upper bound.
      * 
      * @param newNode node to add
-     * @return add or not
      * @throws IloException
      */
-    private boolean tryToaddNodeToPriorityQueue(BabNode newNode) throws IloException {
+    private void addNodeToPriorityQueue(BabNode newNode) throws IloException {        
         newNode.columnGeneration(masterProblem, priceProblem);
+        
+        if (newNode.isLpFeasible() && newNode.getArcToBranch() == null && newNode.getNodeLpObj() < upperBound) {
+            this.updateUpperBound(newNode);
+            this.outputIncubment();
+            return;
+        }
         
         if (!this.canBePruned(newNode)) {
             nodePq.add(newNode);
             nodeNum++;
-            return true;
         }
         
-        return false;
     }
-        
+    
     /**
      * 剪枝操作.
      * 
@@ -161,7 +153,7 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
      * @return can the given be pruned?
      */
     private boolean canBePruned(BabNode node) {
-        if (!node.isLpFeasible() || node.getNodeLpObj() > this.upperBound) {
+        if (!node.isLpFeasible() || node.getNodeLpObj() >= this.upperBound) {
             return true;
         }
         
