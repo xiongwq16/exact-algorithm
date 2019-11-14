@@ -56,11 +56,12 @@ public class VrptwSolution {
         for (Path p: pathsUsed) {
             ArrayList<Integer> vertexIds = p.getVertexIds();
             int num = vertexIds.size();
-            String pathSrt = "";
+            String pathSrt = "" + vertexIds.get(0);
             for (int i = 1; i < num - 1; i++) {
                 cusVisited.add(vertexIds.get(i));
                 pathSrt += vrptwIns.getVertexes().get(vertexIds.get(i)).getNumber() + "-";
             }
+            pathSrt += vertexIds.get(num - 1);
             sb.append(pathSrt.subSequence(0, pathSrt.length() - 1) + "\n");
         }
         
