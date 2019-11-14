@@ -24,7 +24,7 @@ public class Path {
     
     /** 路径的实际成本. */
     private double cost;
-        
+    
     /**
      * 根据节点访问序列生成路径.
      * 
@@ -87,6 +87,36 @@ public class Path {
         this.vertexIds.forEach(id -> sb.append(id + "-"));
         
         return sb.substring(0, sb.length() - 1).toString();
+    }
+    
+    @Override
+    public boolean equals(Object other) {
+        if (other == this) {
+            return true;
+        }
+        
+        if (other == null || !(other instanceof Path)) {
+            return false;
+        }
+        
+        Path that = (Path) other;
+        if (this.cost != that.cost) {
+            return false;
+        }
+        
+        int vertexNum1 = this.vertexIds.size();
+        int vertexNum2 = that.vertexIds.size();
+        if (vertexNum1 != vertexNum2) {
+            return false;
+        }
+        
+        for (int i = 0; i < vertexNum1; i++) {
+            if (this.vertexIds.get(i) != that.vertexIds.get(i)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     public ArrayList<Integer> getVertexIds() {
