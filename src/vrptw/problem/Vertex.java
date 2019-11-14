@@ -21,16 +21,6 @@ public class Vertex {
     
     private TimeWindow timeWindow;
     
-    private class TimeWindow {
-        double earliestTime;
-        double latestTime;
-        
-        TimeWindow(double earliestTime, double latestTime) {
-            this.earliestTime = earliestTime;
-            this.latestTime = latestTime;
-        }
-    }
-    
     Vertex(int id, String number, double x, double y, double demand, 
             double serviceTime, double earliestTime, double latestTime) {
         this.id = id;
@@ -65,10 +55,10 @@ public class Vertex {
     }
     
     public double getEarliestTime() {
-        return timeWindow.earliestTime;
+        return timeWindow.getEarliestTime();
     }
     
     public double getLatestTime() {
-        return timeWindow.latestTime;
+        return timeWindow.getLatestTime();
     }
 }
