@@ -52,8 +52,10 @@ public class SolomonInsertion {
     
     /**
      * 用I1算法构造路径.
+     * 
+     * @return 无可行路径则返回 False
      */
-    public void constructRoutes() {
+    public boolean constructRoutes() {
         // TODO 对于 Branch and Bound 中分支节点无初始可行解的尝试，需要下一阶段的优化
         // 为不能第一个被访问、不能最后一个被访问的客户生成路径，可能存在同一个客户在多条路径上的情况
         for (int i = 1; i < vertexNum - 1; i++) {
@@ -68,11 +70,11 @@ public class SolomonInsertion {
                 }
                 
                 if (r == null) {
-                    // 无解
-                    return;
+                    return false;
                 }
                 
                 this.addRoute(r);
+                routeNum++;
                 continue;
             }
             
@@ -82,9 +84,10 @@ public class SolomonInsertion {
                 
                 if (r == null) {
                     // 无解
-                    return;
+                    return false;
                 }
-                this.addRoute(r);              
+                this.addRoute(r);
+                routeNum++;
             }
             
         }
@@ -122,6 +125,8 @@ public class SolomonInsertion {
         
         // 为所有路径添加 end depot
         routes.forEach(route -> route.addEndDepot());
+        
+        return true;
     }
     
     /**
@@ -153,8 +158,6 @@ public class SolomonInsertion {
         
         for (int i = 0; i < routeNum; i++) {
             if (!routes.get(i).isFeasible()) {
-                System.out.println(sb.toString());
-                System.out.println(i + "th Route Infesible");
                 return;
             }
         }
@@ -168,7 +171,7 @@ public class SolomonInsertion {
     
     private void createRouteForSeedCus(int randInt) {        
         int count = 0;
-        int seedCusId = 1;
+        int seedCusId = -1;
         for (int id = 1; id < vertexNum - 1; id++) {
             if (isVisited[id]) {
                 continue;
@@ -193,14 +196,14 @@ public class SolomonInsertion {
     }
     
     private int getVisitedCusNum() {
-        int servedVertexNum = 0;
+        int visitedCusNum = 0;
         for (int i = 1; i <= cusNum; i++) {
             if (isVisited[i] == true) {
-                servedVertexNum++;
+                visitedCusNum++;
             }
         }
         
-        return servedVertexNum;
+        return visitedCusNum;
     }
     
     /**
@@ -216,7 +219,7 @@ public class SolomonInsertion {
         double maxSaving = -100000000;
         
         // 0 为 start depot，vertexNum - 1 为 end depot(dummy)
-        for (int cusId = 0; cusId < vertexNum - 1; cusId++) {
+        for (int cusId = 1; cusId < vertexNum - 1; cusId++) {
             if (isVisited[cusId]) {
                 continue;
             }
@@ -378,6 +381,9 @@ public class SolomonInsertion {
                 // startDepot-v1-cusId-v2
                 r.addVertexToEnd(j);
                 if (r.isFeasible()) {
+                    isVisited[cusId] = true;
+                    isVisited[i] = true;
+                    isVisited[j] = true;
                     return r;
                 }
                 
@@ -404,6 +410,8 @@ public class SolomonInsertion {
             // startDepot-v1-cusId
             r.insertCustomer(0, i);
             if (r.isFeasible()) {
+                isVisited[cusId] = true;
+                isVisited[i] = true;
                 return r;
             }
             r.removeCustomer(1);
@@ -423,10 +431,12 @@ public class SolomonInsertion {
         // startDepot-cusId
         r.addVertexToEnd(cusId);
         
-        for (int i = 1; i < vertexNum - 1; i++) {
+        for (int id = 1; id < vertexNum - 1; id++) {
             // startDepot-v1-cusId
-            r.addVertexToEnd(i);
+            r.addVertexToEnd(id);
             if (r.isFeasible()) {
+                isVisited[cusId] = true;
+                isVisited[id] = true;
                 return r;
             }
             r.removeCustomer(1);
@@ -437,8 +447,9 @@ public class SolomonInsertion {
     
     private void addRoute(Route r) {
         routes.add(r);
-        for (int i = 1; i <= r.getCusNum(); i++) {
-            isVisited[i] = true;
+        List<Integer> ids = r.getVertexIds();
+        for (int id: ids) {
+            isVisited[id] = true;
         }
     }
 }
