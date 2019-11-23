@@ -42,6 +42,22 @@ public class VrptwSolution {
     }
     
     /**
+     * 根据 MIP 的解生成配送方案.
+     * 
+     * @param paths 生成的所有路径
+     * @param objective 已找到的最优下界
+     */
+    public VrptwSolution(Vrptw vrptwIns, ArrayList<Path> paths, double objective) {
+        this.vrptwIns = vrptwIns;
+        
+        pathNum = 0;
+        totalCost = objective;
+        
+        pathsUsed = new ArrayList<>(paths);
+        pathNum = paths.size();        
+    }
+    
+    /**
      * 输出搜索的节点数量，求解耗时、成本、路径等信息.
      * 
      * @param timeConsume 求解耗时
@@ -56,13 +72,10 @@ public class VrptwSolution {
         for (Path p: pathsUsed) {
             ArrayList<Integer> vertexIds = p.getVertexIds();
             int num = vertexIds.size();
-            String pathSrt = "" + vertexIds.get(0);
             for (int i = 1; i < num - 1; i++) {
                 cusVisited.add(vertexIds.get(i));
-                pathSrt += vrptwIns.getVertexes().get(vertexIds.get(i)).getNumber() + "-";
             }
-            pathSrt += vertexIds.get(num - 1);
-            sb.append(pathSrt.subSequence(0, pathSrt.length() - 1) + "\n");
+            sb.append(p.toString() + "\n");
         }
         
         cusVisited.sort((i1, i2) -> Integer.compare(i1, i2));

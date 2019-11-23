@@ -27,15 +27,26 @@ public class Vertex {
         this.number = number;
         this.x = x;
         this.y = y;
-        this.demand = demand;;
+        this.demand = demand;
         this.serviceTime = serviceTime;
         timeWindow = new TimeWindow(earliestTime, latestTime);
     }
     
+    Vertex(Vertex v, TimeWindow tw) {
+        this.id = v.id;
+        this.number = v.number;
+        this.x = v.x;
+        this.y = v.y;
+        this.demand = v.demand;
+        this.serviceTime = v.serviceTime;
+        
+        this.timeWindow = tw;
+    }
+    
     double getDistanceTo(Vertex v) {
         // 保留两位小数
-        int distToRound = (int)(100 * Math.sqrt((this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y)));
-        return distToRound / 100.0;
+        int distToRound = (int)(10 * Math.sqrt((this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y)));
+        return distToRound / 10.0;
     }
     
     public int getId() {

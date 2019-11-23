@@ -16,7 +16,6 @@ public class Vehicle {
         this.capacity = capacity;
     }
     
-    
     public double getSpeed() {
         return speed;
     }

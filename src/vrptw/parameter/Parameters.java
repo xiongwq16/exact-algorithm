@@ -24,16 +24,10 @@ public class Parameters {
     public static final int MIU = 1;
     public static final int LAMBDA = 1;
     
-    /** Initial upper bound in the branch and bound algorithm. */
-    public static final double BB_INITIAL_UPPERBOUND = Double.MAX_VALUE;
-    /** BOUND_GAP limits how small the gap between upper bound and lower bound can be accepted. */
-    public static final double BOUND_GAP = 1e-6;
-    
     /** Use ESPPTWCC as price problem of VRPTW and solve it by label algorithm. */
-    public static final String ESPPTWCC_LABEL = "ESPPTWCCViaLabel";
+    public static final String ESPPTWCC_LABEL_CORRECTING = "ESPPTWCCViaLabelCorrecting";
     /** Use SPPTWCC as price problem of VRPTW and solve it by label algorithm. */
-    public static final String SPPTWCC_LABEL = "SPPTWCCViaLabel";
-    
+    public static final String SPPTWCC_LABEL_SETTING = "SPPTWCCViaLabelSetting";
     /** Use SPPTWCC as price problem of VRPTW and solve it by label algorithm. */
     public static final String ESPPTWCC_PULSE = "ESPPTWCCViaPulse";
     
@@ -43,4 +37,10 @@ public class Parameters {
     public static final double TIME_STEP = 4;
     /** Lower time limit to stop the bounding procedure, use 50 for 100-series and 100 for 200-series. */
     public static final double TIME_LIMIT_LB = 100;
+    
+    /** Initial upper bound in the branch and bound algorithm. */
+    public static final double BB_INITIAL_UPPERBOUND = Double.MAX_VALUE;
+    
+    /** big M for linearization. */
+    public static final double BIG_M = 1e5;
 }

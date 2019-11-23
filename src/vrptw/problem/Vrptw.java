@@ -23,11 +23,38 @@ public class Vrptw {
     
     private int vehNum;
     private Vehicle vehicle;
-
+    
     /** 距离矩阵，索引顺序从配送中心到客户. */
     private double[][] distMatrix;
     /** 时间矩阵，索引顺序从配送中心到客户. */
     private double[][] timeMatrix;
+    
+    /**
+     * Create a Instance VRPTW if branch on time windows.
+     * 
+     * @param vrptwIns
+     * @param tws
+     */
+    public Vrptw(Vrptw vrptwIns, TimeWindow[] tws) {
+        if (tws.length != vertexNum) {
+            throw new IllegalArgumentException(
+                    String.format("The length of para tws should be %d", vrptwIns.vertexNum));
+        }
+        
+        this.cusNum = vrptwIns.cusNum;
+        this.vertexNum = vrptwIns.vertexNum;
+        
+        vertexes = new ArrayList<>((int) (vertexNum / 0.75) + 1);
+        for (int i = 0; i < vertexNum; i++) {
+            vertexes.add(new Vertex(vrptwIns.vertexes.get(i), tws[i]));
+        }
+        
+        this.vehNum = vrptwIns.vehNum;
+        this.vehicle = vrptwIns.vehicle;
+        
+        this.distMatrix = vrptwIns.distMatrix;
+        this.timeMatrix = vrptwIns.timeMatrix;
+    }
     
     /**
      * Create a Instance Vrptw.
@@ -103,13 +130,14 @@ public class Vrptw {
                 } else {
                     distMatrix[i][j] = v1.getDistanceTo(v2);
                 }
-                
+                                
                 timeMatrix[i][j] = distMatrix[i][j] / vehicle.getSpeed();
             }
+            
         }
-                
+        
     }
-    
+        
     public ArrayList<Vertex> getVertexes() {
         return vertexes;
     }

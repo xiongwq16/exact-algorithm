@@ -56,9 +56,8 @@ public class Path {
     }
     
     /**
-     * 计算并返回 sValue
-     * Svalue[i] = 1 − |K| * (sum[i][j], for j in vertexes)，其中 V 表示客户和配送中心，<br>
-     * 对应原模型中的 sum (x[i][j][k], for j in vertexes, k in |K|) = 1.
+     * 计算并返回 sValue, Svalue[i] = 1 − |K| * sum(x[i][j], for j in vertexes)，<br>
+     * 对应原模型中的 sum (x[i][j][k], for j in vertexes, k in |K|) = 1，拉格朗日松弛时可用.
      * 
      * @param vrptwIns VRPTW 算例
      * @return Svalue
