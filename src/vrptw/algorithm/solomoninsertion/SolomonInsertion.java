@@ -16,10 +16,12 @@ import vrptw.solution.Path;
  * @version V1.0
  * @since JDK1.8
  */
-public class SolomonInsertion {    
-    /** 时间矩阵，分支过程中 timeMatrix 会更新，并且需要调用 Solomon Insertion 生成初始解. */
-    static double[][] timeMatrix;
+public class SolomonInsertion {
+    /** VRPTW instance，对时间窗进行分支的过程中 time window 会更新，并且需要调用 Solomon Insertion 生成初始解. */
     static Vrptw vrptwIns;
+    
+    /** 时间矩阵，对 Arc 进行分支的过程中 timeMatrix 会更新，并且需要调用 Solomon Insertion 生成初始解. */
+    static double[][] timeMatrix;
     
     private int cusNum;
     private int vertexNum;
@@ -36,8 +38,8 @@ public class SolomonInsertion {
      * @param vrptwIns VRPTW instance
      */
     public SolomonInsertion(Vrptw vrptwIns, double[][] timeMatrix) {
-        SolomonInsertion.timeMatrix = timeMatrix;
         SolomonInsertion.vrptwIns = vrptwIns;
+        SolomonInsertion.timeMatrix = timeMatrix;
         
         cusNum = vrptwIns.getCusNum();
         vertexNum = vrptwIns.getVertexNum();
@@ -49,7 +51,7 @@ public class SolomonInsertion {
         isVisited[0] = true;
         isVisited[vertexNum - 1] = true;
     }
-    
+        
     /**
      * 用I1算法构造路径.
      * 
@@ -452,4 +454,5 @@ public class SolomonInsertion {
             isVisited[id] = true;
         }
     }
+        
 }

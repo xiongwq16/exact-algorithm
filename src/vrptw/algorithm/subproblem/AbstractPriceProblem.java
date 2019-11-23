@@ -29,23 +29,39 @@ public abstract class AbstractPriceProblem {
     /**
      * 构造函数.
      * 
-     * @param vrptwIns VRPTW 问题实例
+     * @param originVrptwIns VRPTW 问题实例
      */
-    public AbstractPriceProblem(Vrptw vrptwIns) {
-        this.vrptwIns = vrptwIns;
-        vertexNum = vrptwIns.getVertexNum();
-        capacity = vrptwIns.getVehicle().getCapacity();
+    public AbstractPriceProblem(Vrptw originVrptwIns) {
+        this.vrptwIns = originVrptwIns;
+        
+        vertexNum = originVrptwIns.getVertexNum();
+        capacity = originVrptwIns.getVehicle().getCapacity();
         shortestPaths = new ArrayList<>(Parameters.INITIAL_CAPACITY);
     }
-
+    
+    /**
+     * update time matrix after branch on arc.
+     * 
+     * @param timeMatrix time matrix
+     */
+    public void updateTimeMatrix(double[][] timeMatrix) {
+        this.timeMatrix = timeMatrix;
+    }
+    
+    /**
+     * update VRPTW instance after branch on time window.
+     * 
+     * @param vrptwInsTwChanged new VRPTW instance
+     */
+    public abstract void updateVrptwIns(Vrptw vrptwInsTwChanged);
+    
     /**
      * Solve the price problem.
      * 
-     * @param dualValues dual values of RMLP
-     * @param timeMatrix time matrix
+     * @param lambdas dual values of RMLP
      */
-    public abstract void solve(Map<Integer, Double> dualValues, double[][] timeMatrix);
-        
+    public abstract void solve(Map<Integer, Double> lambdas);
+    
     /**
      * 重置相关变量，准备下一次求解.
      */

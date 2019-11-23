@@ -50,7 +50,15 @@ public class SpptwccViaLabelSetting extends AbstractPriceProblem implements Labe
             labelList.add(new ArrayList<>(Parameters.INITIAL_CAPACITY));
         }
     }
-
+    
+    @Override
+    public void updateVrptwIns(Vrptw newVrptwIns) {
+        vertexes = new Vertex[vertexNum];
+        for (int i = 0; i < vertexNum; i++) {
+            vertexes[i] = newVrptwIns.getVertexes().get(i);
+        }
+    }
+    
     /**
      * Solve a SPPTWCC via dynamic programming labeling approach: <br>
      * Step 0: Initialization <br>
@@ -59,16 +67,14 @@ public class SpptwccViaLabelSetting extends AbstractPriceProblem implements Labe
      * Step 3: Dominance <br>
      * Step 4: Filtering.
      * 
-     * @param dualValues dual values
-     * @param timeMatrix time matrix after branch
+     * @param lambda dual values
      */
     @Override
-    public void solve(Map<Integer, Double> dualValues, double[][] timeMatrix) {
+    public void solve(Map<Integer, Double> lambda) {
         // 清空 unprocessedLabels，labelList，shortestPath
         this.reset();
         
-        this.timeMatrix = timeMatrix;
-        this.updateDistAndCostMatrix(dualValues);
+        this.updateDistAndCostMatrix(lambda);
         
         // Step 0: Initialization
         SppcctwLabel initialLabel = new SppcctwLabel(0, 0, 0, 0);

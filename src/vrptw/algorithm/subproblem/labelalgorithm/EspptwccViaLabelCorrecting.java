@@ -53,6 +53,14 @@ public class EspptwccViaLabelCorrecting extends AbstractPriceProblem implements 
         }
     }
     
+    @Override
+    public void updateVrptwIns(Vrptw newVrptwIns) {
+        vertexes = new Vertex[vertexNum];
+        for (int i = 0; i < vertexNum; i++) {
+            vertexes[i] = newVrptwIns.getVertexes().get(i);
+        }
+    }
+        
     /**
      * Solve an ESPPTWCC via dynamic programming labeling approach: <br>
      * Step 0: Initialization <br>
@@ -61,16 +69,14 @@ public class EspptwccViaLabelCorrecting extends AbstractPriceProblem implements 
      * Step 3: add non-dominated labels to labelList add update vertexToTreat <br>
      * Step 4: Filtering.
      * 
-     * @param dualValues dual values
-     * @param timeMatrix time matrix after branch
+     * @param lambda dual values
      */
     @Override
-    public void solve(Map<Integer, Double> dualValues, double[][] timeMatrix) {
-        // 清空 vertexeToTreat，labelList，准备下次调用
+    public void solve(Map<Integer, Double> lambda) {
+        // 清空 vertexeToTreat，labelList
         this.reset();
         
-        this.timeMatrix = timeMatrix;
-        this.updateDistAndCostMatrix(dualValues);
+        this.updateDistAndCostMatrix(lambda);
         
         // Step 0: Initialization
         EsppcctwLabel initialLabel = new EsppcctwLabel(0, 0, 0, 0);
@@ -346,5 +352,5 @@ public class EspptwccViaLabelCorrecting extends AbstractPriceProblem implements 
         }
                 
     }
-        
+    
 }

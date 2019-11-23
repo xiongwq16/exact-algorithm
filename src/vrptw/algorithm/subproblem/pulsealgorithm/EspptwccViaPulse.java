@@ -48,24 +48,23 @@ public class EspptwccViaPulse extends AbstractPriceProblem {
     /**
      * Create a Instance EspptwccViaPulse.
      * 
-     * @param vrptwIns VRPTW 算例
+     * @param originVrptwIns 原始 VRPTW 算例
      */
-    public EspptwccViaPulse(Vrptw vrptwIns) {
-        super(vrptwIns);
-                
+    public EspptwccViaPulse(Vrptw originVrptwIns) {
+        super(originVrptwIns);
+        
         timeStep = Parameters.TIME_STEP;
         timeLimitLb = Parameters.TIME_LIMIT_LB;
         
-        double timeUb = vrptwIns.getVertexes().get(vertexNum - 1).getLatestTime();
+        double timeUb = originVrptwIns.getVertexes().get(vertexNum - 1).getLatestTime();
         timeUb += timeStep;
         timeUb -= timeUb % timeStep;
         maxTimeIndex = (int) (timeUb / timeStep);
-        // iteration times in bound scheme
         int boundNum = (int) ((timeUb - timeLimitLb) / timeStep) + 1;
-       
-        pulseVertexes = new PulseVertex[vertexNum];        
+        
+        pulseVertexes = new PulseVertex[vertexNum];
         int count = 0;
-        for (Vertex v: vrptwIns.getVertexes()) {
+        for (Vertex v: originVrptwIns.getVertexes()) {
             pulseVertexes[count] = new PulseVertex(v, boundNum);
             count++;
         }
@@ -81,12 +80,35 @@ public class EspptwccViaPulse extends AbstractPriceProblem {
     }
     
     @Override
-    public void solve(Map<Integer, Double> dualValues, double[][] timeMatrix) {
-        // 清空 bundMarix，准备下次调用
+    public void updateVrptwIns(Vrptw vrptwInsTwChanged) {
+        double timeUb = vrptwInsTwChanged.getVertexes().get(vertexNum - 1).getLatestTime();
+        timeUb += timeStep;
+        timeUb -= timeUb % timeStep;
+        maxTimeIndex = (int) (timeUb / timeStep);
+        int boundNum = (int) ((timeUb - timeLimitLb) / timeStep) + 1;
+        
+        int count = 0;
+        for (Vertex v: vrptwInsTwChanged.getVertexes()) {
+            pulseVertexes[count] = new PulseVertex(v, boundNum);
+            count++;
+        }
+        
+    }
+    
+    /**
+     * Solve an ESPPTWCC via pulse algorithm: <br>
+     * Step 0: Initialization <br>
+     * Step 1: bounding Scheme <br>
+     * Step 2: Pulse from start depot <br>
+     * Step 4: Filtering.
+     * 
+     * @param lambda dual values
+     */
+    @Override
+    public void solve(Map<Integer, Double> lambda) {
         this.reset();
         
-        this.timeMatrix = timeMatrix;
-        this.updateDistAndCostMatrix(dualValues);
+        this.updateDistAndCostMatrix(lambda);
         
         // Step 1: Bound Scheme
         boundingScheme();
@@ -521,7 +543,6 @@ public class EspptwccViaPulse extends AbstractPriceProblem {
 
         @Override
         public void run() {
-            // TODO Auto-generated method stub
             pulse(threadId, currVertexId, cost, demand, time, partialPath);
         }
     }
@@ -582,5 +603,5 @@ public class EspptwccViaPulse extends AbstractPriceProblem {
             return sb.toString();
         }
     }
-
+    
 }
