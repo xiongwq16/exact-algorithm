@@ -26,21 +26,14 @@ import vrptw.solution.Path;
  * @version V1.0
  * @since JDK1.8
  */
-public class VrptwMasterProblem {
+class BapMasterProblem {
     private Vrptw vrptwIns;
-    
-    /** Solomon Insertion 得到的初始解的成本. */
-    private double initialSolCost;
     
     private IloCplex rmlpSolver;
     /** 每个客户都应该被访问一次. */
     private Map<Integer, IloRange> cusVisitedCstrs;
     /** Dual values of sum(x[i][j][k] for j in vertexes, k in vehicles) = 1. */
     private Map<Integer, Double> dualValOfCusCstr;
-    /** vehicle number constraint. */
-    private IloRange vehNumCtrs;
-    /** Dual value of vehicle number constraint. */
-    private double dualValOfVehNum;
     
     /** 求解过程中生成的路径数量. */
     private int pathNum;
@@ -49,7 +42,7 @@ public class VrptwMasterProblem {
     /** 决策变量对应的路径. */
     private Path[] paths;
     
-    VrptwMasterProblem(Vrptw vrptwIns) throws IloException {
+    BapMasterProblem(Vrptw vrptwIns) throws IloException {
         this.vrptwIns = vrptwIns;
         
         cusVisitedCstrs = new HashMap<Integer, IloRange>((int)(vrptwIns.getCusNum() / Parameters.LOADER_FACTOR) + 1);
@@ -79,9 +72,6 @@ public class VrptwMasterProblem {
             col = col.and(rmlpSolver.column(cusVisitedCstrs.get(cusId), p.getCusVisitedTime().get(cusId)));
         }
         
-        // 2.2. coefficient in vehicle number constraint
-        col = col.and(rmlpSolver.column(vehNumCtrs, 1));
-        
         // 3. add variable and store the path
         IloNumVar use = rmlpSolver.numVar(col, 0, Double.MAX_VALUE, "Path " + (pathNum + 1));
         this.addPath(p, use);
@@ -101,7 +91,6 @@ public class VrptwMasterProblem {
         for (Map.Entry<Integer, IloRange> entry: cusVisitedCstrs.entrySet()) {
             dualValOfCusCstr.put(entry.getKey(), rmlpSolver.getDual(entry.getValue()));
         }
-        dualValOfVehNum = rmlpSolver.getDual(vehNumCtrs);
         
         return true;
     }
@@ -146,6 +135,7 @@ public class VrptwMasterProblem {
         // choose the fractional arc with max {c[i][j] * ( min {flow[i][j], |1 - flow[i][j]|})}
         double maxCost = Double.NEGATIVE_INFINITY;
         double cost;
+        double[][] distmatrix = vrptwIns.getDistMatrix();
         for (int i = 0; i < vertexNum; i++) {
             for (int j = 0; j < vertexNum; j++) {
                 if (flow[i][j] < Parameters.EPS) {
@@ -154,11 +144,12 @@ public class VrptwMasterProblem {
                 
                 if (flow[i][j] < 1 - Parameters.EPS || flow[i][j] > 1 + Parameters.EPS) {
                     cost = Math.min(flow[i][j], Math.abs(1 - flow[i][j]));
-                    cost = cost * vrptwIns.getDistMatrix()[i][j];
+                    cost = cost * distmatrix[i][j];
                     if (cost > maxCost) {
                         maxCost = cost;
                         branchArc = new Arc(i, j);
                     }
+                    
                 }
                 
             }
@@ -187,31 +178,6 @@ public class VrptwMasterProblem {
         rmlpSolver.end();
     }
     
-    double getInitialSolCost() {
-        return initialSolCost;
-    }
-        
-    private void initialModel() throws IloException {
-        rmlpSolver = new IloCplex();
-        rmlpSolver.addMinimize();
-        
-        // 客户必须被服务约束
-        for (Vertex cus: vrptwIns.getCustomers()) {
-            // Revise Set Partition to Set Covering Model
-            cusVisitedCstrs.put(cus.getId(), rmlpSolver.addRange(1, Double.MAX_VALUE, "Cus " + cus.getId()));
-        }
-        // 车辆数约束
-        vehNumCtrs = rmlpSolver.addRange(-Double.MAX_VALUE, vrptwIns.getVehNum(), "VehNum");
-        
-        // add initial path
-        Path[] initialPaths = this.generateInitailPaths(vrptwIns, vrptwIns.getTimeMatrix());
-        for (int i = 0; i < initialPaths.length; i++) {
-            this.addColumn(initialPaths[i]);
-        }
-        
-        this.setCplexParams();
-    }
-    
     /**
      * 生成初始路径.
      * 
@@ -219,23 +185,15 @@ public class VrptwMasterProblem {
      * @param timeMatrix 考虑 branchArc 后的时间矩阵
      * @return
      */
-    public Path[] generateInitailPaths(Vrptw vrptwIns, double[][] timeMatrix) {
+    Path[] generateInitailPaths(Vrptw vrptwIns, double[][] timeMatrix) {
         // 调用 Solomon Insertion 生成初始解
         SolomonInsertion i1 = new SolomonInsertion(vrptwIns, timeMatrix);
-        i1.constructRoutes();
         
-        this.initialSolCost = i1.getCost();
+        if (!i1.constructRoutes()) {
+            return null;
+        }
         
         return i1.getPaths();
-        
-//        Path[] ps = new Path[vrptwIns.getCusNum()];
-//        int i = 0;
-//        for (Vertex cus: vrptwIns.getCustomers()) {
-//            ArrayList<Integer> vertexIds = new ArrayList<>(Arrays.asList(0, cus.getId(), 101));
-//            ps[i] = new Path(vrptwIns, vertexIds);
-//            i++;
-//        }
-//        return ps;
     }
     
     Path[] getPaths() {
@@ -246,6 +204,30 @@ public class VrptwMasterProblem {
         }
         
         return pathsWithoutNull;
+    }
+    
+    int isPathExit(Path p) {
+        for (int i = 0; i < pathNum; i++) {
+            if (p.equals(paths[i])) {
+                return i;
+            }
+        }
+        
+        return -1;
+    }
+    
+    private void initialModel() throws IloException {
+        rmlpSolver = new IloCplex();
+        rmlpSolver.addMinimize();
+        
+        // 客户必须被服务约束
+        for (Vertex cus: vrptwIns.getCustomers()) {
+            // Revise Set Partition to Set Covering Model
+            cusVisitedCstrs.put(cus.getId(), rmlpSolver.addRange(1, Double.MAX_VALUE, "Cus " + cus.getId()));
+        }
+        
+        // Parameter settings
+        this.setCplexParams();
     }
     
     /**
@@ -273,11 +255,6 @@ public class VrptwMasterProblem {
         rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Markowitz, 0.999);
         rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Feasibility, 1e-6);
         
-        // No iteration messages until solution for LP relaxation
-        rmlpSolver.setParam(IloCplex.Param.Simplex.Display, 0);
-        // Display integer feasible solutions for MIP
-        rmlpSolver.setParam(IloCplex.Param.MIP.Display, 1);
-        
         rmlpSolver.setOut(null);
     }
     
@@ -303,12 +280,5 @@ public class VrptwMasterProblem {
     Map<Integer, Double> getDualValOfCusCstr() {
         return dualValOfCusCstr;
     }
-    
-    /**
-     * @return 车辆数约束对应的对偶变量值.
-     */
-    double getDualValOfVehNum() {
-        return dualValOfVehNum;
-    }
-    
+        
 }

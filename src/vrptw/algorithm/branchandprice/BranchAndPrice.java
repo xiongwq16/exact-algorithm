@@ -5,13 +5,13 @@ import ilog.concert.IloException;
 import java.util.PriorityQueue;
 
 import vrptw.algorithm.VrptwExactAlgorithm;
+import vrptw.algorithm.solomoninsertion.SolomonInsertion;
 import vrptw.algorithm.subproblem.AbstractPriceProblem;
-import vrptw.algorithm.subproblem.labelalgorithm.EspptwccViaLabelCorrecting;
-import vrptw.algorithm.subproblem.labelalgorithm.SpptwccViaLabelSetting;
 import vrptw.algorithm.subproblem.pulsealgorithm.EspptwccViaPulse;
 import vrptw.parameter.Parameters;
 import vrptw.problem.Arc;
 import vrptw.problem.Vrptw;
+import vrptw.solution.Path;
 import vrptw.solution.VrptwSolution;
 
 /**
@@ -22,22 +22,22 @@ import vrptw.solution.VrptwSolution;
  * @since JDK1.8
  */
 public class BranchAndPrice implements VrptwExactAlgorithm {
-    private Vrptw vrptwIns;
+    private Vrptw originVrptwIns;
     
     /** Price Problem. */
     private AbstractPriceProblem priceProblem;
     /** 主问题. */
-    private VrptwMasterProblem masterProblem;
+    private BapMasterProblem masterProblem;
     
     /** 分支过程中的上界，也是当前找到的最好可行解的目标值. */
     private double upperBound;
     /** 最好的分支节点. */
-    private BabNode bestNode;
+    private BapNode bestNode;
     
     /** Node number in the branch and bound tree. */
     private int nodeNum;
     /** Best first search，分支节点的选择的优先队列. */
-    private PriorityQueue<BabNode> nodePq;
+    private PriorityQueue<BapNode> nodePq;
     
     private VrptwSolution vrptwSol;
     
@@ -47,35 +47,14 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
      * @param vrptwIns VRPTW instance
      * @throws IloException 
      */
-    public BranchAndPrice(Vrptw vrptwIns, String priceProblemType) throws IloException {
-        if (priceProblemType != Parameters.SPPTWCC_LABEL 
-                && priceProblemType != Parameters.ESPPTWCC_LABEL 
-                && priceProblemType != Parameters.ESPPTWCC_PULSE) {
-            throw new IllegalArgumentException(
-                    String.format("%s can only be SPPTWCC or ESPPTWCC.", priceProblemType));
-        }
+    public BranchAndPrice(Vrptw vrptwIns) throws IloException {
+        this.originVrptwIns = vrptwIns;
         
-        this.vrptwIns = vrptwIns;
+        // Price and master Problem Initialization
+        this.priceProblem = new EspptwccViaPulse(vrptwIns);
+        this.masterProblem = new BapMasterProblem(vrptwIns);
         
-        // Price Problem Initialization
-        switch (priceProblemType) {
-            case Parameters.SPPTWCC_LABEL:
-                priceProblem = new SpptwccViaLabelSetting(vrptwIns);
-                break;
-            case Parameters.ESPPTWCC_LABEL:
-                priceProblem = new EspptwccViaLabelCorrecting(vrptwIns);
-                break;
-            case Parameters.ESPPTWCC_PULSE:
-                priceProblem = new EspptwccViaPulse(vrptwIns);
-                break;
-            default:
-                throw new IllegalArgumentException(
-                        String.format("%s can only be SPPTWCC or ESPPTWCC.", priceProblemType));
-        }
-        
-        this.masterProblem = new VrptwMasterProblem(vrptwIns);
-        // RMLP 初始化调用的是 Solomon Insertion 算法，得到的是可行解，可用于设定上界   
-        this.upperBound = this.masterProblem.getInitialSolCost();
+        this.upperBound = Parameters.BB_INITIAL_UPPERBOUND;
         
         this.nodeNum = 0;
         this.nodePq = new PriorityQueue<>(Parameters.INITIAL_CAPACITY);
@@ -86,10 +65,21 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
         System.out.println("Branch and price algorithm");
         System.out.println("--------------------------------------------");
         
-        double startTime = System.currentTimeMillis();
+        final double startTime = System.currentTimeMillis();
         
-        // Solve initial master problem
-        BabNode root = new BabNode(vrptwIns);
+        // use Solomon Insertion to generate initial solution
+        SolomonInsertion i1 = new SolomonInsertion(originVrptwIns, originVrptwIns.getTimeMatrix());
+        
+        i1.constructRoutes();
+        Path[] initialPaths = i1.getPaths();
+        for (int i = 0; i < initialPaths.length; i++) {
+            masterProblem.addColumn(initialPaths[i]);
+        }
+        //  use the solution of Solomon Insertion as upper bound 
+        this.upperBound = i1.getCost();
+        
+        // Solve initial RMLP
+        BapNode root = new BapNode(originVrptwIns);
         this.addNodeToPriorityQueue(root);
         
         if (!root.isLpFeasible()) {
@@ -98,10 +88,10 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
         }
         
         while (!nodePq.isEmpty()) {
-            BabNode node = nodePq.poll();
+            BapNode node = nodePq.poll();
             
             if (canBePruned(node)) {
-                continue;
+                break;
             }
             
             // branch
@@ -109,16 +99,16 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
             int from = arcToBranch.getFromVertexId();
             int to = arcToBranch.getToVertexId();
             
-            BabNode left = new BabNode(node, from, to, 0);
+            BapNode left = new BapNode(node, from, to, 0);
             this.addNodeToPriorityQueue(left);
             
-            BabNode right = new BabNode(node, from, to, 1);
+            BapNode right = new BapNode(node, from, to, 1);
             this.addNodeToPriorityQueue(right);
         }
         
         double timeConsume = System.currentTimeMillis() - startTime;
         vrptwSol = new VrptwSolution(
-                vrptwIns, masterProblem.getPaths(), bestNode.getPathIndicesInMipSol(), bestNode.getNodeLpObj());
+                originVrptwIns, masterProblem.getPaths(), bestNode.getPathIndicesInMipSol(), bestNode.getNodeLpObj());
         vrptwSol.output(timeConsume, nodeNum);
                 
         masterProblem.end();
@@ -130,7 +120,8 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
      * @param newNode node to add
      * @throws IloException
      */
-    private void addNodeToPriorityQueue(BabNode newNode) throws IloException {        
+    private void addNodeToPriorityQueue(BapNode newNode) throws IloException {        
+        nodeNum++;
         newNode.columnGeneration(masterProblem, priceProblem);
         
         if (newNode.isLpFeasible() && newNode.getArcToBranch() == null && newNode.getNodeLpObj() < upperBound) {
@@ -141,7 +132,6 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
         
         if (!this.canBePruned(newNode)) {
             nodePq.add(newNode);
-            nodeNum++;
         }
         
     }
@@ -152,7 +142,7 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
      * @param node given node
      * @return can the given be pruned?
      */
-    private boolean canBePruned(BabNode node) {
+    private boolean canBePruned(BapNode node) {
         if (!node.isLpFeasible() || node.getNodeLpObj() >= this.upperBound) {
             return true;
         }
@@ -160,7 +150,7 @@ public class BranchAndPrice implements VrptwExactAlgorithm {
         return false;
     }
     
-    private void updateUpperBound(BabNode bestNode) {
+    private void updateUpperBound(BapNode bestNode) {
         upperBound = bestNode.getNodeLpObj();
         this.bestNode = bestNode;
     }

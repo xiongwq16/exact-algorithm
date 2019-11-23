@@ -18,18 +18,18 @@ import vrptw.solution.Path;
  * @version V1.0
  * @since JDK1.8
  */
-class BabNode implements Comparable<BabNode> {
-    private static Vrptw vrptwIns;
+class BapNode implements Comparable<BapNode> {
+    private static Vrptw originVrptwIns;
     
     /** 由于分支被禁止的路径索引. */
     private ArrayList<Integer> infeasiblePathIndices;
     
     /** parent of the node in the branch and bound tree. */
-    private BabNode parent;
+    private BapNode parent;
     /** The depth of current node in the branch and bound tree. */
     private int depth;
     /** store the branch info from parent to current node. */
-    private BranchArc branchArcOfParent;
+    private BranchArc branchArcFromParent;
     
     /** LP objective of subproblem corresponding to the node. */
     private boolean isLpFeasible;
@@ -40,14 +40,14 @@ class BabNode implements Comparable<BabNode> {
     
     /** 当前节点对应的 MIP 解的路径索引. */
     private ArrayList<Integer> pathIndicesInMipSol;
-        
+    
     /**
-     * generate root node.
+     * Create root node.
      * 
      * @param vrptwIns VRPTW instance
      */
-    BabNode(Vrptw vrptwIns) {
-        BabNode.vrptwIns = vrptwIns;
+    BapNode(Vrptw vrptwIns) {
+        BapNode.originVrptwIns = vrptwIns;
         
         isLpFeasible = true;
         infeasiblePathIndices = new ArrayList<>(Parameters.INITIAL_CAPACITY);
@@ -63,7 +63,7 @@ class BabNode implements Comparable<BabNode> {
      * @param toVertexId end vertex of the branch arc
      * @param branchValue branch value
      */
-    BabNode(BabNode parent, int fromVertexId, int toVertexId, int branchValue) {
+    BapNode(BapNode parent, int fromVertexId, int toVertexId, int branchValue) {
         if (parent == null || branchValue > 1 || branchValue < -Parameters.EPS) {
             throw new IllegalArgumentException("Error in branch scheme, please check.");
         }
@@ -73,23 +73,23 @@ class BabNode implements Comparable<BabNode> {
 
         this.parent = parent;
         this.depth = parent.depth + 1;
-        this.branchArcOfParent = new BranchArc(fromVertexId, toVertexId, branchValue);
+        
+        this.branchArcFromParent = new BranchArc(fromVertexId, toVertexId, branchValue);
     }
     
     /**
-     * Use column generation algorithm to solve the RMLP for the node, <br>
-     * If it's infeasible, set the IloException{@link #nodeLpObj} to be big enough.
+     * Use column generation algorithm to solve the RMLP for the node.
      * 
      * @throws IloException
      */
-    void columnGeneration(VrptwMasterProblem masterProblem, AbstractPriceProblem priceProblem) throws IloException {
+    void columnGeneration(BapMasterProblem masterProblem, AbstractPriceProblem priceProblem) throws IloException {
         
         // Update the masterProblem based on the branch arc
         this.updateInfeasiblePathSet(masterProblem);
         
         // update the time matrix
         ArrayList<BranchArc> historyBranchArcs = this.getHistoryBranchArcs();
-        double[][] timeMatrix = this.updateTimeMatrix(historyBranchArcs);
+        double[][] timeMatrix = this.calTimeMatrix(historyBranchArcs);
                 
         // column generation process
         int countIter = 0;
@@ -97,23 +97,20 @@ class BabNode implements Comparable<BabNode> {
             countIter++;
             // solve the RMLP
             if (!masterProblem.solveLp()) {
-                // FIXME 分支会使得之前生成的大量路径被“禁止”，从而导致子节点的可行路径不足以生成初始可行解，需要下一阶段优化
-                if (countIter == 0) {
-                    System.out.println("Initial CG Fail");
-                    System.exit(0);
-                    Path[] initialPaths = masterProblem.generateInitailPaths(vrptwIns, timeMatrix);
-                    if (initialPaths[0] == null) {
+                // TODO 分支使得已生成的部分路径被“禁止”，导致子节点无初始可行解，采用 Solomon Insertion 生成初始路径，需进一步优化
+                if (countIter == 1) {
+                    Path[] initialPaths = masterProblem.generateInitailPaths(originVrptwIns, timeMatrix);
+                    if (initialPaths == null) {
                         // The RMLP is infeasible, set the cost to be big enough
                         this.isLpFeasible = false;
                         return;
                     }
-                    for (int i = 0; i < initialPaths.length; i++) {
-                        masterProblem.addColumn(initialPaths[i]);
-                    }
                     
-                    if (!masterProblem.solveLp()) {
-                        this.isLpFeasible = false;
-                        return;
+                    for (int i = 0; i < initialPaths.length; i++) {
+                        int index = masterProblem.isPathExit(initialPaths[i]);
+                        if (index != -1) {
+                            masterProblem.addColumn(initialPaths[i]);
+                        }
                     }
                     
                 } else {
@@ -123,11 +120,12 @@ class BabNode implements Comparable<BabNode> {
                 
             }
             
-            // solve price problem
-            priceProblem.solve(masterProblem.getDualValOfCusCstr(), timeMatrix);
+            // solve price problem, update the time matrix first
+            priceProblem.updateTimeMatrix(timeMatrix);
+            priceProblem.solve(masterProblem.getDualValOfCusCstr());
             
             // if the reduced cost > 0, MLP's solution found, stop; otherwise, add column
-            double reduceCost = priceProblem.getRevisedCostOfShortestPath() - masterProblem.getDualValOfVehNum();
+            double reduceCost = priceProblem.getRevisedCostOfShortestPath();
             if (reduceCost > -Parameters.EPS) {
                 this.nodeLpObj = masterProblem.getObjective();
                 this.arcToBranch = masterProblem.findBranchArc();
@@ -145,12 +143,9 @@ class BabNode implements Comparable<BabNode> {
                     
                 }
                 
-                System.out.println("LP Optimal" + ", Obj-" + masterProblem.getObjective());
+                System.out.println("LP Optimal" + ", Obj-" + this.nodeLpObj);
+                
                 return;
-            }
-            
-            if (countIter % 50 == 0) {
-                System.out.println(countIter + ", Obj-" + masterProblem.getObjective() + ", RC-" + reduceCost + "\n");
             }
             
             // add shortest path to RMLP as new column
@@ -168,7 +163,7 @@ class BabNode implements Comparable<BabNode> {
      * @param masterProblem RMLP
      * @throws IloException 
      */
-    private void updateInfeasiblePathSet(VrptwMasterProblem masterProblem) throws IloException {       
+    private void updateInfeasiblePathSet(BapMasterProblem masterProblem) throws IloException {       
         if (parent == null) {
             return;
         }
@@ -176,8 +171,8 @@ class BabNode implements Comparable<BabNode> {
         Path[] paths = masterProblem.getPaths();
         int pathNum = paths.length;
         
-        int fromVertexId = branchArcOfParent.getFromVertexId();
-        int toVertexId = branchArcOfParent.getToVertexId();
+        int fromVertexId = branchArcFromParent.getFromVertexId();
+        int toVertexId = branchArcFromParent.getToVertexId();
         for (int i = 0; i < pathNum; i++) {
             if (infeasiblePathIndices.contains(i)) {
                 continue;
@@ -185,29 +180,43 @@ class BabNode implements Comparable<BabNode> {
             
             ArrayList<Integer> vertexIds = paths[i].getVertexIds();
             int posOfBranchArcFrom = vertexIds.indexOf(fromVertexId);
+            int posOfBranchArcTo = vertexIds.indexOf(toVertexId);
             
-            if (branchArcOfParent.branchValue == 0) {
+            if (branchArcFromParent.branchValue == 0) {
                 // Path pass through branch arc is infeasible
-                if (posOfBranchArcFrom != -1 
-                        && vertexIds.get(posOfBranchArcFrom + 1) == toVertexId) {
+                if (posOfBranchArcFrom != -1 && vertexIds.get(posOfBranchArcFrom + 1) == toVertexId) {
                     infeasiblePathIndices.add(i);
                 }
                 continue;
             }
             
-            // branchValue = 1 is below
-            // Path with arc starting from "branchArcFromId" but not ending at "branchArcToId" is infeasible
-            if (posOfBranchArcFrom != -1 && vertexIds.get(posOfBranchArcFrom + 1) != toVertexId) {
-                infeasiblePathIndices.add(i);
-            }
+            // branch value = 1 is below
+            // Attention: the arc from start depot to end depot is impossible to be chosen to branch
             
-            // Path with arc ending at "branchArcToId" but not starting from "branchArcFromId" is infeasible
-            // Except the end of branch arc is end depot
-            if (toVertexId == vrptwIns.getVertexNum() - 1) {
+            // 1. when the fromVertex is start depot, path visiting "toVertex" but not as first customer, is infeasible
+            if (fromVertexId == 0) {
+                if (posOfBranchArcTo != -1 && vertexIds.get(posOfBranchArcTo - 1) != 0) {
+                    infeasiblePathIndices.add(i);
+                }
                 continue;
             }
-            int posOfBranchArcTo = vertexIds.indexOf(toVertexId);
+            
+            // 2. when the toVertex is end depot, path visiting "fromVertex" but not as last customer, is infeasible
+            if (toVertexId == originVrptwIns.getVertexNum() - 1) {
+                if (posOfBranchArcFrom != -1 
+                        && vertexIds.get(posOfBranchArcFrom + 1) != originVrptwIns.getVertexNum() - 1) {
+                    infeasiblePathIndices.add(i);
+                }
+                continue;
+            }
+            
+            // 3. when both the start and end vertex of branch arc are customer
             if (posOfBranchArcTo != -1 && vertexIds.get(posOfBranchArcTo - 1) != fromVertexId) {
+                // path with arc ending at "branchArcTo" but not starting from "branchArcFromId" is infeasible
+                infeasiblePathIndices.add(i);
+            }
+            if (posOfBranchArcFrom != -1 && vertexIds.get(posOfBranchArcFrom + 1) != toVertexId) {
+                // path with arc starting from "branchArcFrom" but not ending at "branchArcTo" is infeasible
                 infeasiblePathIndices.add(i);
             }
             
@@ -218,7 +227,7 @@ class BabNode implements Comparable<BabNode> {
     }
     
     /**
-     * get branch info, here we forbid arcs by setting their travel time to big enough: <br>
+     * get new time matrix after branch, here we forbid arcs by setting their travel time to big enough: <br>
      * 1 if brachValue = 0，set the travel time of branch arc to big enough; <br>
      * 2 if branchValue = 1，set the travel time of the arcs starting from "fromVertex" or ending at
      * "toVertex" to be big enough except branch arc. <br>
@@ -226,56 +235,70 @@ class BabNode implements Comparable<BabNode> {
      * @param historyBranchArcs all branch arcs of current node's ancestors in the branch and bound tree
      * @return new time matrix after branch
      */
-    private double[][] updateTimeMatrix(List<BranchArc> historyBranchArcs) {
+    private double[][] calTimeMatrix(List<BranchArc> historyBranchArcs) {
         if (parent == null) {
-            return vrptwIns.getTimeMatrix();
+            return originVrptwIns.getTimeMatrix();
         }
         
         // time matrix initialization
-        int vertexNum = vrptwIns.getVertexNum();
+        int vertexNum = originVrptwIns.getVertexNum();
         double[][] timeMatrix = new double[vertexNum][vertexNum];
         for (int i = 0; i < vertexNum; i++) {
             for (int j = 0; j < vertexNum; j++) {
-                timeMatrix[i][j] = vrptwIns.getTimeMatrix()[i][j];
+                timeMatrix[i][j] = originVrptwIns.getTimeMatrix()[i][j];
             }
         }
         
+        // calculate new time matrix
         for (BranchArc arc: historyBranchArcs) {
+            int fromVertexId = arc.getFromVertexId();
+            int toVertexId = arc.getToVertexId();
             // branch value = 0
             if (arc.branchValue == 0) {
-                timeMatrix[arc.getFromVertexId()][arc.getToVertexId()] = Parameters.BIG_TRAVEL_TIME;
+                timeMatrix[fromVertexId][toVertexId] = Parameters.BIG_TRAVEL_TIME;
                 continue;
             }
             
-            // branch value = 1, special case:
+            // branch value = 1
+            // Attention: the arc from start depot to end depot is impossible to be chosen to branch
+            
             // 1. when "fromVertexId" = 0(startDepot), set the travel time(TT) of arcs ending at "toVertex"
             // to be big enough except branch arc, so the vehicle must pass branch arc to serve "toVertex"
-            // 2. when "toVertexId" = vertexNum(endDepot), just set the TT of arcs starting from "fromVertex"
-            // to be big enough except branch arc, so the vehicle must pass branch arc after serve "fromVertex"
-            // Attention: the arc from start depot to end depot is impossible to be chosen in path
-            if (arc.getFromVertexId() != 0) {
-                // fromVertex is not the start depot
-                int j;
-                for (j = 0; j < arc.getToVertexId(); j++) {
-                    timeMatrix[arc.getFromVertexId()][j] = Parameters.BIG_TRAVEL_TIME;
+            if (fromVertexId == 0) {
+                for (int i = 1; i < vertexNum; i++) {
+                    timeMatrix[i][toVertexId] = Parameters.BIG_TRAVEL_TIME;
                 }
-                for (j = j + 1; j < vertexNum; j++) {
-                    timeMatrix[arc.getFromVertexId()][j] = Parameters.BIG_TRAVEL_TIME;
-                }
-                
+                continue;
             }
             
-            if (arc.getToVertexId() != vertexNum) {
-                // toVertex is not the end depot
-                int i;
-                for (i = 0; i < arc.getFromVertexId(); i++) {
-                    timeMatrix[i][arc.getToVertexId()] = Parameters.BIG_TRAVEL_TIME;
+            // 2. when "toVertexId" = vertexNum - 1(endDepot), just set the TT of arcs starting from "fromVertex"
+            // to be big enough except branch arc, so the vehicle must pass branch arc after serve "fromVertex"
+            if (toVertexId == vertexNum - 1) {
+                for (int j = 0; j < vertexNum - 1; j++) {
+                    timeMatrix[fromVertexId][j] = Parameters.BIG_TRAVEL_TIME;
                 }
-                for (i = i + 1; i < vertexNum; i++) {
-                    timeMatrix[i][arc.getToVertexId()] = Parameters.BIG_TRAVEL_TIME;
-                }
-                
+                continue;
             }
+            
+            // 3. both the start and end vertex of branch arc are customer
+            int j;
+            for (j = 0; j < toVertexId; j++) {
+                timeMatrix[fromVertexId][j] = Parameters.BIG_TRAVEL_TIME;
+            }
+            for (j = j + 1; j < vertexNum; j++) {
+                timeMatrix[fromVertexId][j] = Parameters.BIG_TRAVEL_TIME;
+            }
+            
+            int i;
+            for (i = 0; i < fromVertexId; i++) {
+                timeMatrix[i][toVertexId] = Parameters.BIG_TRAVEL_TIME;
+            }
+            for (i = i + 1; i < vertexNum; i++) {
+                timeMatrix[i][toVertexId] = Parameters.BIG_TRAVEL_TIME;
+            }
+            
+            // forbid the arc in the opposite direction
+            timeMatrix[toVertexId][fromVertexId] = Parameters.BIG_TRAVEL_TIME;
             
         }
         
@@ -294,11 +317,11 @@ class BabNode implements Comparable<BabNode> {
         }
         
         // add the branch arcs of current node's ancestors
-        BabNode node = this;
-        branchArcs.add(node.branchArcOfParent);
+        BapNode node = this;
+        branchArcs.add(node.branchArcFromParent);
         while ((node = node.parent) != null) {
-            if (node.branchArcOfParent != null) {
-                branchArcs.add(node.branchArcOfParent);
+            if (node.branchArcFromParent != null) {
+                branchArcs.add(node.branchArcFromParent);
             }
         }
         
@@ -348,8 +371,7 @@ class BabNode implements Comparable<BabNode> {
     }
     
     @Override
-    public int compareTo(BabNode that) {
-        // TODO Auto-generated method stub
+    public int compareTo(BapNode that) {
         return Double.compare(nodeLpObj, that.nodeLpObj);
     }
     
