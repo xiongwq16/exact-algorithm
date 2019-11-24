@@ -19,8 +19,9 @@ import vrptw.solution.Path;
 import vrptw.solution.VrptwSolution;
 
 /**
- * Branch and Bound Algorithm，如求解耗时过长，可以将 Best known solution 中的车辆数作为车辆数约束，<br>
- * 本代码的核心是展示自定义 BranchCallback 的使用，不考虑过多的优化.
+ * Branch and Bound Algorithm，如求解耗时过长，可以将 Best known solution 中的车辆数作为车辆数约束，
+ * 本代码的核心是展示自定义 BranchCallback 的使用，使用的分支策略也较为简单，没有考虑太多的优化，
+ * 有兴趣的可以继续优化 Cplex 的求解参数，或者参考 branch and price 中的分支框架设计自己的分支定界算法.
  * 
  * @author Xiong Wangqi
  * @version V1.0
@@ -51,7 +52,7 @@ public class BranchAndBound implements VrptwExactAlgorithm {
     public BranchAndBound(Vrptw vrptwIns) throws IloException {                
         this.vrptwIns = vrptwIns;
         vertexNum = vrptwIns.getVertexNum();
-        // TODO 车辆数优化
+        // TODO  可使用 Best known solution 的车辆数，加快求解速度，否则耗时容易过长
         vehNum = vrptwIns.getVehNum();
         
         isFeasibleArc = new boolean[vertexNum][vertexNum];
@@ -242,8 +243,9 @@ public class BranchAndBound implements VrptwExactAlgorithm {
         }
         
     }
-            
+    
     private void setCplexParams() throws IloException {
+        vrptwModel.setParam(IloCplex.Param.MIP.Tolerances.Integrality, Parameters.EPS);
         // Traditional: Use traditional branch-and-cut search.
         vrptwModel.setParam(IloCplex.Param.MIP.Strategy.Search, IloCplex.MIPSearch.Traditional);
         // 默认使用 BestBound 策略，不设置也可以
@@ -351,7 +353,7 @@ public class BranchAndBound implements VrptwExactAlgorithm {
                     if (!isFeasibleArc[i][j]) {
                         continue;
                     }
-
+                    
                     for (int k = 0; k < vehNum && loop; k++) {
                         if (getFeasibility(x[i][j][k]).equals(IloCplex.IntegerFeasibilityStatus.Infeasible)) {
                             // cur_dif = get_dif(x[i][j][k]);
@@ -368,11 +370,13 @@ public class BranchAndBound implements VrptwExactAlgorithm {
             }
 
             if (arcFrom >= 0) {
-                // left node with x[i][j][k] = 0
-                IloNumVar branchVar = x[arcFrom][arcTo][vehicleId];
-                makeBranch(branchVar, 0, BranchDirection.Down, getObjValue());
-                // right node with x[i][j][k] = 1
-                makeBranch(branchVar, 1, BranchDirection.Up, getObjValue());
+                /*
+                 * The invoking instance of Cplex may use this estimate to select nodes to process. 
+                 * A poor estimate will not influence the correctness of the solution, but it may influence performance.
+                 * Using the objective value of the current node is usually a safe choice.
+                 */
+                makeBranch(x[arcFrom][arcTo][vehicleId], 0, BranchDirection.Down, getObjValue());
+                makeBranch(x[arcFrom][arcTo][vehicleId], 1, BranchDirection.Up, getObjValue());
                 
                 nodeNum += 2;
             }
