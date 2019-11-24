@@ -45,8 +45,8 @@ public class Vertex {
     
     double getDistanceTo(Vertex v) {
         // 保留两位小数
-        int distToRound = (int)(10 * Math.sqrt((this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y)));
-        return distToRound / 10.0;
+        int distToRound = (int)(100 * Math.sqrt((this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y)));
+        return distToRound / 100.0;
     }
     
     public int getId() {
