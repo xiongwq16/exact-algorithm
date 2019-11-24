@@ -253,7 +253,7 @@ class BapMasterProblem {
         // set simplex tolerances
         rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Optimality, 1e-9);
         rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Markowitz, 0.999);
-        rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Feasibility, 1e-6);
+        rmlpSolver.setParam(IloCplex.Param.Simplex.Tolerances.Feasibility, Parameters.EPS);
         
         rmlpSolver.setOut(null);
     }
