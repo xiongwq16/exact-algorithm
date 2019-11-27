@@ -49,6 +49,7 @@ class FctpMasterProblem {
      * Solve the MasterProblem.
      * 
      * @return the solution whose "flows" should be set based on the subProblem
+     * @throws IloException
      */
     FctpSolution solve() throws IloException {
         long start = System.currentTimeMillis();
@@ -79,7 +80,8 @@ class FctpMasterProblem {
     /**
      * 获取核心数量（用户 BendersCallback 定义线程数）.
      * 
-     * @return the number of logical cores.
+     * @return the number of logical cores
+     * @throws IloException
      */
     int getNumCores() throws IloException {
         return masterSolver.getNumCores();

@@ -27,6 +27,8 @@ public class ColumnGeneration {
     
     /**
      * 使用列生成求解，并返回解.
+     * 
+     * @throws IloException
      */
     public void solve() throws IloException {
         // 列生成核心步骤

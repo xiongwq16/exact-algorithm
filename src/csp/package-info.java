@@ -1,5 +1,5 @@
 /**
- * 基于Cplex的木材切割问题的列生成实现. <br>
+ * 基于Cplex的木材切割问题的列生成实现.
  * 
  * @author Xiong Wangqi
  * @version V1.0

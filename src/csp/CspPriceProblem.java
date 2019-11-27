@@ -26,6 +26,7 @@ class CspPriceProblem {
      * Price Problem 模型初始化.
      * 
      * @param cspIns CSP instance
+     * @throws IloException
      */
     CspPriceProblem(Csp cspIns) throws IloException {
         kinds = cspIns.getAmount().length;
@@ -48,6 +49,7 @@ class CspPriceProblem {
      * 
      * @param dualPrice 对偶变量的值
      * @return 新的切割方案 - 决策变量的值
+     * @throws IloException
      */
     double[] solve(double[] dualPrice) throws IloException {
         // 更新目标值

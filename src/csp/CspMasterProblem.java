@@ -8,6 +8,7 @@ import ilog.concert.IloObjective;
 import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -35,6 +36,7 @@ class CspMasterProblem {
      * Master Problem 初始化.
      * 
      * @param cspIns CSP instance
+     * @throws IloException
      */
     CspMasterProblem(Csp cspIns) throws IloException {
         kinds = cspIns.getAmount().length;

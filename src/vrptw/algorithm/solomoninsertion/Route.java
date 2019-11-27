@@ -154,6 +154,7 @@ class Route {
      * 
      * @param pos      待插入位置
      * @param cusId 待插入客户的 ID
+     * @return 插入顾客后路径山的时间窗是否可行
      */
     boolean isInsertFeasibleOnTw(int pos, int cusId) {
         if (pos > cusNum) {

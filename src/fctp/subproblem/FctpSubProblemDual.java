@@ -23,15 +23,9 @@ import java.util.HashMap;
  * @since JDK1.8
  */
 public class FctpSubProblemDual extends AbstractFctpSubProblem {
-    /**
-     * 需求量约束的对偶变量，对应需求量约束：for k in customers:
-     * sum(flow[j][k], for j in warehouses) >= demand[k].
-     */
+    /** 需求量约束的对偶变量，对应需求量约束. */
     private IloNumVar[] demandDualVars;
-    /**
-     * 容量约束的对偶变量，对应容量约束：for j in warehouses:
-     * -sum(flow[j][k], for k in customers) >= -capacity[j] * open[j].
-     */
+    /** 容量约束的对偶变量，对应容量约束：for j in warehouses. */
     private IloNumVar[] capacityDualVars;
     
     /** 记录目标函数系数，便于生成割平面（重要）. */

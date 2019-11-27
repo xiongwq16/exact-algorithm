@@ -117,6 +117,8 @@ public class AnnotationBenders {
      * 2 为变量添加注释：0 对应 MasterProblem，n  大于 0 对应第 n 个 SubProblem <br>
      * 3 如果 SubProblem 不可再分解，则全部注释为 1 <br>
      * 4 如果某个变量没有被注释，则使用创建 IloCplex.LongAnnotation 对象时的默认值 <br>
+     * 
+     * @throws IloException
      */
     private void setAnnotation() throws IloException {
         IloCplex.LongAnnotation benders = uflpSolver.newLongAnnotation(

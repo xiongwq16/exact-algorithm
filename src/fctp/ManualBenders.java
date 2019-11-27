@@ -65,6 +65,8 @@ public class ManualBenders {
 
     /**
      * 求解 FCTP 并输出解.
+     * 
+     * @throws IloException
      */
     public void solve() throws IloException {
         // 新建 BendersCallback 通用回调对象，并添加到主问题对应的求解器中
@@ -188,8 +190,8 @@ public class ManualBenders {
          *
          * @param subProblem     当前处理的子问题
          * @param masterObjValue 新的历史最优值
-         * @throws IloException
          * @throws UnknownObjectException
+         * @throws IloException
          */
         private synchronized void storeFlows(AbstractFctpSubProblem subProblem, double masterObjValue)
                 throws UnknownObjectException, IloException {

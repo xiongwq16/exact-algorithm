@@ -23,6 +23,7 @@ public class VrptwSolution {
     /**
      * 根据 MIP 的解生成配送方案.
      * 
+     * @param vrptwIns VRPTW instance
      * @param paths 生成的所有路径
      * @param usedPathIndices 解中使用的路径的索引
      * @param objective 已找到的最优下界

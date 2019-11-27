@@ -59,6 +59,7 @@ class BapMasterProblem {
      * add column based on the new path.
      * 
      * @param p path to add
+     * @throws IloException
      */
     void addColumn(Path p) throws IloException {
         // 1. coefficient in objective - route cost
