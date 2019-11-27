@@ -32,8 +32,8 @@ public class Vrptw {
     /**
      * Create a Instance VRPTW if branch on time windows.
      * 
-     * @param vrptwIns
-     * @param tws
+     * @param vrptwIns VRPTW 实例
+     * @param tws 新的时间窗数组
      */
     public Vrptw(Vrptw vrptwIns, TimeWindow[] tws) {
         if (tws.length != vertexNum) {

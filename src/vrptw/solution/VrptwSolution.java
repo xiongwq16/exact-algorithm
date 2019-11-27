@@ -44,6 +44,7 @@ public class VrptwSolution {
     /**
      * 根据 MIP 的解生成配送方案.
      * 
+     * @param vrptwIns VRPTW 实例
      * @param paths 生成的所有路径
      * @param objective 已找到的最优下界
      */

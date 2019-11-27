@@ -24,14 +24,12 @@ import java.util.HashMap;
  */
 public class FctpSubProblemDual extends AbstractFctpSubProblem {
     /**
-     * 需求量约束的对偶变量 <br>
-     * 需求量约束：for k in customers: <br>
+     * 需求量约束的对偶变量，对应需求量约束：for k in customers:
      * sum(flow[j][k], for j in warehouses) >= demand[k].
      */
     private IloNumVar[] demandDualVars;
     /**
-     * 容量约束的对偶变量 <br>
-     * 容量约束：for j in warehouses: <br>
+     * 容量约束的对偶变量，对应容量约束：for j in warehouses:
      * -sum(flow[j][k], for k in customers) >= -capacity[j] * open[j].
      */
     private IloNumVar[] capacityDualVars;

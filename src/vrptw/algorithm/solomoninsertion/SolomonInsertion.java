@@ -36,6 +36,7 @@ public class SolomonInsertion {
      * Create a Instance SolomonInsertion.
      * 
      * @param vrptwIns VRPTW instance
+     * @param timeMatrix 新的时间矩阵 
      */
     public SolomonInsertion(Vrptw vrptwIns, double[][] timeMatrix) {
         SolomonInsertion.vrptwIns = vrptwIns;
@@ -133,7 +134,7 @@ public class SolomonInsertion {
     
     /**
      * 获取 Solomon Insertion Algorithm 生成的初始路径.
-     * @return
+     * @return 生成的路径数组
      */
     public Path[] getPaths() {
         Path[] paths = new Path[routeNum];
@@ -273,7 +274,7 @@ public class SolomonInsertion {
      * 
      * @param pos 待插入位置
      * @param cusId 待插入客户的 ID
-     * @return
+     * @return 节省值 c_1
      */
     private double getCost1(int pos, int cusId) {
         // 取当前路径

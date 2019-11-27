@@ -183,7 +183,7 @@ class BapMasterProblem {
      * 
      * @param vrptwIns VRPTW Instance
      * @param timeMatrix 考虑 branchArc 后的时间矩阵
-     * @return
+     * @return 初始路径数组
      */
     Path[] generateInitailPaths(Vrptw vrptwIns, double[][] timeMatrix) {
         // 调用 Solomon Insertion 生成初始解
@@ -260,6 +260,8 @@ class BapMasterProblem {
     
     /**
      * resizing {@link #usePath} and {@link #paths}.
+     * 
+     * @param capacity 新容量
      */
     private void resizing(int capacity) {
         assert capacity >= pathNum;

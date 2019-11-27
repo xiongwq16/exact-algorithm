@@ -21,6 +21,8 @@ class Uflp {
 
     /**
      * 读取算例数据新建 UFLP 实例，算例采用Kochetov and Ivanenko 生成的 UFLP's Euclidean benchmark.
+     * 
+     * @param filename 文件路径名
      */
     Uflp(String filename) throws IOException {
         BufferedReader bfr = new BufferedReader(new FileReader(filename));

@@ -33,6 +33,8 @@ class CspMasterProblem {
 
     /**
      * Master Problem 初始化.
+     * 
+     * @param cspIns CSP instance
      */
     CspMasterProblem(Csp cspIns) throws IloException {
         kinds = cspIns.getAmount().length;
@@ -64,6 +66,10 @@ class CspMasterProblem {
 
     /**
      * 生成新列，模型三要素更新：目标值，约束 ，变量.
+     * 
+     * @param coeffInObj 要生成的列对应的变量在目标函数中的系数
+     * @param coeffInCstrs 要生成的列对应的变量在约束条件中的系数
+     * @throws IloException
      */
     void addColumn(double coeffInObj, double[] coeffInCstrs) throws IloException {
         if (coeffInCstrs.length != amountCstrs.length) {
@@ -87,7 +93,10 @@ class CspMasterProblem {
     }
 
     /**
-     * 求解 RMLP 并返回对偶变量.
+     * 求解 RMLP 并返回对偶变量值.
+     * 
+     * @return 对偶变量的值
+     * @throws IloException
      */
     double[] solveLp() throws IloException {
         rmlpSolver.solve();
@@ -96,6 +105,9 @@ class CspMasterProblem {
 
     /**
      * 将 MLP 转换为 MIP 进行求解，并返回木材切割问题的解.
+     * 
+     * @return CSP 问题的解
+     * @throws IloException
      */
     CspSolution solveIp() throws IloException {
         this.deleteNullPatterns();
@@ -153,6 +165,8 @@ class CspMasterProblem {
 
     /**
      * 扩展 {@link #cutTimes} 和 {@link #patterns} 的容量.
+     * 
+     * @param capacity 新容量
      */
     private void resizing(int capacity) {
         assert capacity >= patternNum;

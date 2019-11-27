@@ -277,9 +277,9 @@ public class EspptwccViaLabelCorrecting extends AbstractPriceProblem implements 
         
         /**
          * 相同起点和终点的两个标签之间的优超准则判别：<br>
-         * 1. 各个“资源”情况 “this” <= “other” <br>
+         * 1. 各个“资源”情况 “this” 不大于 “other” <br>
          * 2. this 中访问过的节点是否包含了所有 other 中访问过的节点 <br>
-         * 则 “this” dominates “other”, 注意这里并未排除相等的情况，会在其他方法中考虑.
+         * 则 “this” 优超 “other”, 注意这里并未排除相等的情况，会在其他方法中考虑.
          * 
          * @param other 待比较的标签
          * @return 当前标签 “this” 是否"优超"给定标签 “other”

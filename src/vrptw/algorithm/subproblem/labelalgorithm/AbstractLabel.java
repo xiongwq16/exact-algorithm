@@ -33,8 +33,7 @@ abstract class AbstractLabel {
     }
 
     /**
-     * 相同起点和终点的两个标签之间的优超准则判别：<br>
-     * 如果各个“资源”情况 “this” <= “that”, “this” 优超 “that”，<br>
+     * 相同起点和终点的两个标签之间的优超准则判别：如果各个“资源”情况 “this” 不大于 “that”, 则“this” 优超 “that”。<br>
      * 注意这里并未排除相等的情况，会在其他方法中考虑.
      * 
      * @param that 待比较的标签
@@ -45,8 +44,7 @@ abstract class AbstractLabel {
     /**
      * 将标签转换为节点访问序列.
      * 
-     * @param label 给定的标签
-     * @return 标签对应的路径
+     * @return 标签对应的路径上的节点序列
      */
     ArrayList<Integer> getVisitVertexes() {
         ArrayList<Integer> vertexIds = new ArrayList<>(Parameters.INITIAL_CAPACITY);

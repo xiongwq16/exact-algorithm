@@ -80,6 +80,8 @@ class BapNode implements Comparable<BapNode> {
     /**
      * Use column generation algorithm to solve the RMLP for the node.
      * 
+     * @param masterProblem RMLP instance
+     * @param priceProblem price problem instance
      * @throws IloException
      */
     void columnGeneration(BapMasterProblem masterProblem, AbstractPriceProblem priceProblem) throws IloException {

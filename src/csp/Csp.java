@@ -22,6 +22,9 @@ class Csp {
 
     /**
      * 读取算例数据创建 CutStock Problem 实例.
+     * 
+     * @param filename 文件路径名
+     * @throws IOException
      */
     Csp(String filename) throws IOException {
         BufferedReader bfr = new BufferedReader(new FileReader(filename));

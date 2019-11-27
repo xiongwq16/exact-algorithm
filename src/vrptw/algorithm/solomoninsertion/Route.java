@@ -28,8 +28,6 @@ class Route {
     
     /**
      * Create a Instance Path with start depot.
-     * 
-     * @param vrptwIns VRPTW instance
      */
     Route() {
         cusNum = 0;
@@ -360,7 +358,7 @@ class Route {
         /**
          * 基于到达时间设置服务信息，包括开始服务信息、时间窗违反信息、结束服务信息.
          * 
-         * @param preCumTwViolence 上一个节点活动对应的累计时间窗违反量
+         * @param arrTime 到达当前节点的时刻
          */
         private void setTimeInfo(double arrTime) {            
             this.arrTime = arrTime;
