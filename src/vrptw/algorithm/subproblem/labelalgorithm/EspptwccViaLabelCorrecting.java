@@ -13,8 +13,8 @@ import vrptw.problem.Vrptw;
 import vrptw.solution.Path;
 
 /**
- * Solve an ESPPTWCC via dynamic programming labeling approach <br>
- * see "3.4. Description of the Algorithm"in Feillet et al. (2006): <br>
+ * Solve an ESPPTWCC via dynamic programming labeling approach, <br>
+ * see "3.4 Description of the Algorithm"in Feillet et al. (2006): <br>
  * An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints: <br>
  * Application to Some Vehicle Routing Problems.
  * 

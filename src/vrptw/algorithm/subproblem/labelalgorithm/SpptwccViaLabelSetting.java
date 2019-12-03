@@ -13,8 +13,8 @@ import vrptw.problem.Vrptw;
 import vrptw.solution.Path;
 
 /**
- * Solve a SPPTWCC via dynamic programming labeling approach <br>
- * see "Algorithm 2.1. The general label setting algorithm (GLSA)" in Boland et al. (2006): <br>
+ * Solve a SPPTWCC via dynamic programming labeling approach, <br>
+ * see "Algorithm 2.1 The general label setting algorithm (GLSA)" in Boland et al. (2006): <br>
  * Accelerated label setting algorithms for the elementary resource constrained shortest path problem.
  * 
  * @author Xiong Wangqi
